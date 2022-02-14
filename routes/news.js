@@ -6,7 +6,7 @@ const router = Router()
 router.get('/get', (req, res, next) => {
   const { news_id } = req.query
   const con = connect()
-  const sql = `select * from news where news_id=${news_id}`
+  const sql = `select * from news where news_id='${news_id}'`
   query({ con, sql, res })
 })
 
@@ -34,7 +34,7 @@ router.post('/insert/user', (req, res, next) => {
 router.post('/update/user', (req, res, next) => {
   const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
   const con = connect()
-  const sql = `update user_news set was_read=${was_read}, is_bookmarked=${is_bookmarked}, has_recommended=${has_recommended} where user_id=${user_id} and news_id=${news_id}`
+  const sql = `update user_news set was_read=${was_read}, is_bookmarked=${is_bookmarked}, has_recommended=${has_recommended} where user_id=${user_id} and news_id='${news_id}'`
   query({ con, sql, res })
 })
 
