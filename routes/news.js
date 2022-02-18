@@ -27,14 +27,40 @@ router.post('/insert', (req, res, next) => {
 router.post('/insert/user', (req, res, next) => {
   const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
   const con = connect()
-  const sql = `insert into user_news (user_id, news_id, was_read, is_bookmarked, has_recommended) values (${user_id}, '${news_id}', ${was_read}, ${is_bookmarked}, ${has_recommended})`
+
+  let names = 'user_id, news_id'
+  let values = `${user_id}, '${news_id}'`
+  if(was_read !== undefined) {
+    names += ', was_read'
+    values += `, ${was_read}`
+  }
+  if(is_bookmarked !== undefined) {
+    names += ', is_bookmarked'
+    values += `, ${is_bookmarked}`
+  }
+  if(has_recommended !== undefined) {
+    names += ', has_recommended'
+    values += `, ${has_recommended}`
+  }
+
+  const sql = `insert into user_news (${names}) values (${values})`
   query({ con, sql, res })
 })
 
 router.post('/update/user', (req, res, next) => {
   const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
   const con = connect()
-  const sql = `update user_news set was_read=${was_read}, is_bookmarked=${is_bookmarked}, has_recommended=${has_recommended} where user_id=${user_id} and news_id='${news_id}'`
+
+  let sets = []
+  if(was_read !== undefined)
+    sets = [...sets, `was_read=${was_read}`]
+  if(is_bookmarked !== undefined)
+    sets = [...sets, `is_bookmarked=${is_bookmarked}`]
+  if(has_recommended !== undefined)
+    sets = [...sets, `has_recommended=${has_recommended}`]
+  sets = sets.join(', ')
+
+  const sql = `update user_news set ${sets} where user_id=${user_id} and news_id='${news_id}'`
   query({ con, sql, res })
 })
 
