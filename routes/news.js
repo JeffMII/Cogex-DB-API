@@ -1,5 +1,8 @@
 const { Router } = require('express')
 const { connect, query } = require('../helpers/mysql.helper')
+const fetch = require('node-fetch')
+const xpath = require('xpath')
+const dom = require('xmldom')
 
 const router = Router()
 
@@ -22,6 +25,7 @@ router.post('/insert', (req, res, next) => {
   const con = connect()
   const sql = `insert into news (news_id, news_json) values ('${news_id}', '${JSON.stringify(news_json)}')`
   query({ con, sql, res })
+  // const html = await fetch('https://bd58-67-141-223-85.ngrok.io/generate/multiple-choice-questions', { method: 'POST', body: params })
 })
 
 router.post('/insert/user', (req, res, next) => {

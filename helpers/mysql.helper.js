@@ -26,7 +26,7 @@ function query({ con, sql, res }) {
         return
       }
       console.table(result)
-      res.send({ success: true, result })
+      res.send({ success: true, result: JSON.parse(result) })
       con.end()
     })
   })
