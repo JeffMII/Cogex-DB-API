@@ -1,8 +1,8 @@
 const { Router } = require('express')
 const { connect, query } = require('../helpers/mysql.helper')
-const fetch = require('node-fetch')
 const xpath = require('xpath')
 const dom = require('xmldom')
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 
 const router = Router()
 
