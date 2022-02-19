@@ -25,7 +25,9 @@ router.post('/insert', (req, res, next) => {
   const con = connect()
   const sql = `insert into news (news_id, news_json) values ('${news_id}', '${JSON.stringify(news_json)}')`
   query({ con, sql, res })
-  // const html = await fetch('https://bd58-67-141-223-85.ngrok.io/generate/multiple-choice-questions', { method: 'POST', body: params })
+  // const url = news_json.newsSearchUrl
+  // const news = await fetch(url, { method: 'GET' })
+  // const questions = await fetch('https://bd58-67-141-223-85.ngrok.io/generate/multiple-choice-questions', { method: 'POST', body: '' })
 })
 
 router.post('/insert/user', (req, res, next) => {

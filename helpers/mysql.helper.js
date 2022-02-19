@@ -25,8 +25,13 @@ function query({ con, sql, res }) {
         res.send({ success: false, error: err })
         return
       }
-      console.table(result)
-      res.send({ success: true, result: JSON.parse(result) })
+
+      for(const res of result)
+        if(res.news_json)
+          res.news_json = JSON.parse(res.news_json)
+        else break
+      
+      res.send({ success: true, result })
       con.end()
     })
   })
