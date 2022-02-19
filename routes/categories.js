@@ -5,7 +5,7 @@ const router = Router()
 
 router.get('/get', (req, res, next) => {
   const con = connect()
-  const sql = `select * from cogex.super_categories left join sub_categories on super_categories.super_category_id=sub_categories.super_category_id order by super_categories.super_category_id`
+  const sql = `select sup.super_category_id, sup.super_category, sup.super_category_display, sub.sub_category_id, sub.sub_category, sub.sub_category_display from cogex.super_categories sup left join cogex.sub_categories sub on sup.super_category_id=sub.super_category_id order by sup.super_category_id`
   query({ con, sql, res })
 })
 
