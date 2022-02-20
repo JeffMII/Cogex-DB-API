@@ -18,14 +18,14 @@ function query({ con, sql, res }) {
     con.connect(err => {
       if (err) {
         res.status(500)
-        res.send({ success: false, error: err })
+        res.send({ success: false, result: null, error: err })
         return
       }
       console.log('Connected...')
       con.query(sql, (err, result) => {
         if (err) {
           res.status(500)
-          res.send({ success: false, error: err })
+          res.send({ success: false, result: null, error: err })
           return
         }
         
@@ -35,13 +35,13 @@ function query({ con, sql, res }) {
               res.news_json = JSON.parse(res.news_json)
             else break
         
-        res.send({ success: true, result })
+        res.send({ success: true, result, error: null })
         con.end()
       })
     })
   } catch(err) {
     res.status(500)
-    res.send({ success: false, error: err })
+    res.send({ success: false, result: null, error: err })
   }
 }
 

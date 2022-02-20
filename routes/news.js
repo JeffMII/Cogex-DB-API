@@ -2,31 +2,39 @@ const { Router } = require('express')
 const { connect, query } = require('../helpers/mysql.helper')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 const HTMLParser = require('node-html-parser')
+const { response } = require('../app')
 
 const router = Router()
 
-router.get('/get', (req, res, next) => {
+router.get('/get/news', (req, res, next) => {
   const { news_id } = req.query
   const con = connect()
   const sql = `select * from news where news_id='${news_id}'`
   query({ con, sql, res })
 })
 
-router.get('/get/user', (req, res, next) => {
+router.get('/get/news/by/user', (req, res, next) => {
   const { user_id } = req.query
   const con = connect()
   const sql = `select * from news left join user_news on news.news_id=user_news.news_id and user_news.user_id=${user_id}`
   query({ con, sql, res })
 })
 
-router.post('/insert', (req, res, next) => {
+router.post('/insert/news', (req, res, next) => {
   const { news_id, news_json } = req.body
+
+  if(news_json.contents === undefined) {
+    res.status(404)
+    res.send({ success: false, error: 'Body must contain news_id and news_json. Also, news_json must contain news_json.contents. Use the contents extractor before attempting insert.' })
+    return
+  }
+  
   const con = connect()
   const sql = `insert into news (news_id, news_json) values ('${news_id}', '${JSON.stringify(news_json)}')`
   query({ con, sql, res })
 })
 
-router.post('/insert/user', (req, res, next) => {
+router.post('/insert/user/news', (req, res, next) => {
   const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
   const con = connect()
 
@@ -66,7 +74,7 @@ router.post('/update/user', (req, res, next) => {
   query({ con, sql, res })
 })
 
-router.post('/extract', (req, res, next) => {
+router.post('/extract/contents', (req, res, next) => {
   const { news_json } = req.body
   const url = news_json.newsSearchUrl
   news_json.contents = []
@@ -79,18 +87,24 @@ router.post('/extract', (req, res, next) => {
     for(const site of sites) {
       const url = site.attributes.href
       fetch(url, { method: 'GET' })
-        .then(res => res.text())
-        .then(txt => {
-          const root = HTMLParser.parse(txt)
-          const content = root.querySelectorAll(`div[class=caas-body]>p`)
-          let text = []
-          for(let i = 0; i < content.length; i++)
-            text = [...text, content[i].rawText.replace('&quot;', '').replace('— ', '').replace('&#39;', '\'').replace('&amp;', '&').replace('&#8217;', '\'')]
-          news_json.content = [...news_json.content, { source: site.attributes.href, text }]
-        })
-     }
-     res.send({ success: true, result: news_json })
+      .then(res => res.text())
+      .then(txt => {
+        const root = HTMLParser.parse(txt)
+        const content = root.querySelectorAll(`div[class=caas-body]>p`)
+        let text = []
+        for(let i = 0; i < content.length; i++)
+          text = [...text, content[i].rawText.replaceAll('&quot;', '')
+                                              .replaceAll('— ', '')
+                                              .replaceAll('&#39;', '\'')
+                                              .replaceAll('&amp;', '&')
+                                              .replaceAll('&#8217;', '\'')]
+
+        news_json.content = [...news_json.content, { source: site.attributes.href, text }]
+      })
+    }
+
+    res.send({ success: true, result: news_json, error: null })
   })
 })
-
+  
 module.exports = router
