@@ -1,8 +1,7 @@
 const { Router } = require('express')
 const { connect, query } = require('../helpers/mysql.helper')
-const xpath = require('xpath')
-const dom = require('xmldom')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
+const HTMLParser = require('node-html-parser')
 
 const router = Router()
 
@@ -25,9 +24,6 @@ router.post('/insert', (req, res, next) => {
   const con = connect()
   const sql = `insert into news (news_id, news_json) values ('${news_id}', '${JSON.stringify(news_json)}')`
   query({ con, sql, res })
-  // const url = news_json.newsSearchUrl
-  // const news = await fetch(url, { method: 'GET' })
-  // const questions = await fetch('https://bd58-67-141-223-85.ngrok.io/generate/multiple-choice-questions', { method: 'POST', body: '' })
 })
 
 router.post('/insert/user', (req, res, next) => {
@@ -68,6 +64,33 @@ router.post('/update/user', (req, res, next) => {
 
   const sql = `update user_news set ${sets} where user_id=${user_id} and news_id='${news_id}'`
   query({ con, sql, res })
+})
+
+router.post('/extract', (req, res, next) => {
+  const { news_json } = req.body
+  const url = news_json.newsSearchUrl
+  news_json.contents = []
+  fetch(url, { method: 'GET' })
+  .then(res => res.text())
+  .then(txt => {
+    const root = HTMLParser.parse(txt)
+    const sites = root.querySelectorAll('a[data-author*=yahoo i]')
+
+    for(const site of sites) {
+      const url = site.attributes.href
+      fetch(url, { method: 'GET' })
+        .then(res => res.text())
+        .then(txt => {
+          const root = HTMLParser.parse(txt)
+          const content = root.querySelectorAll(`div[class=caas-body]>p`)
+          let text = []
+          for(let i = 0; i < content.length; i++)
+            text = [...text, content[i].rawText.replace('&quot;', '').replace('— ', '').replace('&#39;', '\'').replace('&amp;', '&').replace('&#8217;', '\'')]
+          news_json.content = [...news_json.content, { source: site.attributes.href, text }]
+        })
+     }
+     res.send({ success: true, result: news_json })
+  })
 })
 
 module.exports = router
