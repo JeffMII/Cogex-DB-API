@@ -14,7 +14,7 @@ router.post('/login', (req, res, next) => {
 })
 
 router.get('/get', (req, res, next) => {
-  const { user_id } = req.query
+  const { user_id, user_nickname } = req.query
 
   if(user_id === undefined) {
     res.send({ success: false, error: 'Query parameters must contain user_id.' })
@@ -78,5 +78,11 @@ router.post('/update', (req, res, next) => {
   const sql = `update users set ${sets} where user_id=${user_id}`
   query({ con, sql, res })
 })
+
+router.get('/get/interests')
+
+router.post('/insert/interests')
+
+// { user_id: id, interests: [{ super_category_id: id, sub_category_id: id }, { super_category_id: id }, { super_category_id: id, sub_category_id: id }]}
 
 module.exports = router
