@@ -4,7 +4,8 @@
   "type": "commonjs",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www.js"
+    "start": "node ./bin/www.js",
+    "warnings": "node --trace-warnings ./bin/www.js"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",

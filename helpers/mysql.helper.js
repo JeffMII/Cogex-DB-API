@@ -1,9 +1,8 @@
 const mysql = require('mysql')
-const { response } = require('../app')
 
 const info = JSON.parse(process.env.MYSQL_INFO)
 
-function connect() {
+function connection() {
   return mysql.createConnection({
     host: info.host,
     user: info.user,
@@ -12,37 +11,49 @@ function connect() {
   })
 }
 
-function query({ con, sql, res }) {
-  console.log(sql)
+async function query({ sql, res }) {
+  const con = connection()
   try {
     con.connect(err => {
-      if (err) {
+      if(err) {
         res.status(500)
-        res.send({ success: false, result: null, error: err })
-        return
+        res.send({ error: err, result: null })
       }
-      console.log('Connected...')
-      con.query(sql, (err, result) => {
-        if (err) {
-          res.status(500)
-          res.send({ success: false, result: null, error: err })
-          return
-        }
-        
-        if(Array.isArray(result))
-          for(const res of result)
-            if(res.news_json !== undefined)
-              res.news_json = JSON.parse(res.news_json)
-            else break
-        
-        res.send({ success: true, result, error: null })
-        con.end()
+      con.query(sql, (error, result) => {
+          if (Array.isArray(result))
+            for (const res of result)
+              if (res.news_json !== undefined)
+                res.news_json = JSON.parse(res.news_json)
+              else break
+          res.send({ result, error: null })
+        })
       })
-    })
-  } catch(err) {
+  } catch (err) {
     res.status(500)
-    res.send({ success: false, result: null, error: err })
+    res.send({ error: err, result: null})
   }
+
+  // try {
+  //   const con = connection()
+  //   con.connect(async error => {
+  //     const promise = new Promise(async () => {
+  //       if (error)
+  //           return await Promise.resolve(err(error))
+        
+  //       con.query(sql, async (error, result) => {
+  //         if (error)
+  //           return await Promise.resolve(err(error))
+          
+  //         if (Array.isArray(result))
+  //           for (const res of result)
+  //             if (res.news_json !== undefined)
+  //               res.news_json = JSON.parse(res.news_json)
+  //             else break
+          
+  //       })
+  //     })
+  //   })
+  // } catch (error) { return err(error) }
 }
 
-module.exports = { connect, query }
+module.exports = { query }
