@@ -57,6 +57,7 @@ router.post('/insert/user/news', (req, res, next) => {
   }
 
   const sql = `insert into user_news (${names}) values (${values})`
+  console.log(sql)
   query({ sql, res })
 })
 

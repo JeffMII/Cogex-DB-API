@@ -20,12 +20,17 @@ async function query({ sql, res }) {
         res.send({ error: err, result: null })
       }
       con.query(sql, (error, result) => {
+          if(error) {
+            res.status(500)
+            res.send({ result: null, error: error})
+            return
+          }
           if (Array.isArray(result))
             for (const res of result)
               if (res.news_json !== undefined)
                 res.news_json = JSON.parse(res.news_json)
               else break
-          res.send({ result, error: null })
+          res.send({ result: result, error: null })
         })
       })
   } catch (err) {
