@@ -57,7 +57,7 @@ router.post('/update/user', (req, res, next) => {
 
 router.get('/get/interests', (req, res, next) => {
   const { user_id } = req.query
-  const sql = `select user_interests.super_category_id, user_interests.sub_category_id, super_categories.super_category, super_categories.super_category_display, sub.sub_category,sub.sub_category_display from user_interests inner join super_categories on user_interests.super_category_id=super_categories.super_category_id left join sub_categories as sub on user_interests.sub_category_id=sub.sub_category_id where user_interests.user_id=27 order by user_interests.super_category_id,user_interests.sub_category_id;`
+  const sql = `select user_interests.super_category_id, user_interests.sub_category_id, super_categories.super_category, super_categories.super_category_display, sub.sub_category,sub.sub_category_display from user_interests inner join super_categories on user_interests.super_category_id=super_categories.super_category_id left join sub_categories as sub on user_interests.sub_category_id=sub.sub_category_id where user_interests.user_id=${user_id} order by user_interests.super_category_id,user_interests.sub_category_id;`
   query({ sql, res })
 })
 
