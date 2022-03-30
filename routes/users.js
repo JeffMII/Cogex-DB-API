@@ -63,15 +63,14 @@ router.get('/get/interests', (req, res, next) => {
 
 router.post('/insert/interests', async (req, res, next) => {
   const { user_id, interests } = req.body
-  let names = '(user_id, super_category_id, sub_category_id)'
+  const names = '(user_id, super_category_id, sub_category_id)'
   
   var values = []
-  for(const interest of interests) {
+  for(const interest of interests)
     values = [...values, `(${user_id}, ${interest.super_category_id}, ${interest.sub_category_id})`]
-  }
   values = values.join(', ')
 
-  let sql = `insert into user_interests ${names} values ${values}`
+  const sql = `insert into user_interests ${names} values ${values}`
   query({ sql, res })
 })
 
