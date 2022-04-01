@@ -7,7 +7,7 @@ const router = Router()
 var error = { status: 400 }
 const nil = [undefined, null]
 
-router.post('/login', (req, res, next) => {
+router.post('/login', (req, res) => {
   const { user_nickname, user_password } = req.body
 
   error.error = 'Body requires user_nickname and user_password',
@@ -21,10 +21,10 @@ router.post('/login', (req, res, next) => {
   const hash = crypto.createHash('sha256').update(user_password).digest('hex')
 
   const sql = `select user_id, user_creation_date, user_update_date, quiz_time_limit, quiz_question_limit from users where user_nickname='${user_nickname}' and user_password='${hash}'`
-  queryResponse({ sql, res })
+  queryResponse(sql, res)
 })
 
-router.get('/get/user/by/id', (req, res, next) => {
+router.get('/get/user/by/id', (req, res) => {
   const { user_id } = req.query
 
   error.error = 'Query parameters require user_id',
@@ -36,10 +36,10 @@ router.get('/get/user/by/id', (req, res, next) => {
   }
 
   const sql = `select user_nickname, user_creation_date, user_update_date, quiz_time_limit, quiz_question_limit from users where user_id=${user_id}`
-  queryResponse({ sql, res })
+  queryResponse(sql, res)
 })
 
-router.get('/get/user/by/name', (req, res, next) => {
+router.get('/get/user/by/name', (req, res) => {
   const { user_nickname } = req.query
 
   error.error = 'Query parameters require user_nickname',
@@ -51,10 +51,10 @@ router.get('/get/user/by/name', (req, res, next) => {
   }
 
   const sql = `select user_id, user_creation_date, user_update_date, quiz_time_limit, quiz_question_limit from users where user_nickname='${user_nickname}'`
-  queryResponse({ sql, res })
+  queryResponse(sql, res)
 })
 
-router.post('/insert/user', (req, res, next) => {
+router.post('/insert/user', (req, res) => {
   const { user_nickname, user_password } = req.body
 
   error.error = 'Body requires user_nickname and user_password'
@@ -68,10 +68,10 @@ router.post('/insert/user', (req, res, next) => {
   const hash = crypto.createHash('sha256').update(user_password).digest('hex')
 
   const sql = `insert into users (user_nickname, user_password) values ('${user_nickname}', '${hash}')`
-  queryResponse({ sql, res })
+  queryResponse(sql, res)
 })
 
-router.post('/update/user', (req, res, next) => {
+router.post('/update/user', (req, res) => {
   const { user_id, user_password, quiz_time_limit, quiz_question_limit } = req.body
 
   error.error = 'Body requires user_id'
@@ -95,10 +95,10 @@ router.post('/update/user', (req, res, next) => {
   sets = sets.join(', ')
 
 const sql = `update users set ${sets} where user_id=${user_id}`
-  queryResponse({ sql, res })
+  queryResponse(sql, res)
 })
 
-router.post('/get/interests', (req, res, next) => {
+router.post('/get/interests', (req, res) => {
   const { user_id } = req.body
 
   error.error = 'Query parameters require user_id'
@@ -110,10 +110,10 @@ router.post('/get/interests', (req, res, next) => {
   }
 
   const sql = `select u.user_id, u.user_nickname, sup.*, sub.* from user_interests ui inner join super_categories sup on ui.super_category_id=sup.super_category_id left join sub_categories sub on ui.sub_category_id=sub.sub_category_id inner join users u on ui.user_id=u.user_id and u.user_id=27 order by sup.super_category_id`
-  queryResponse({ sql, res })
+  queryResponse(sql, res)
 })
 
-router.post('/insert/interests', async (req, res, next) => {
+router.post('/insert/interests', async (req, res) => {
 
   console.log('Entering request...')
   const { user_id, interests } = req.body
