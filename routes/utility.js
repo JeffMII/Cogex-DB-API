@@ -4,10 +4,17 @@ const { query } = require('../helpers/mysql.helper.js')
 const router = Router()
 
 router.post('/query/database', (req, res) => {
+  
+  try {
 
-  const { sql } = req.body
-  query(sql, res)
+    const { sql } = req.body
+    query(sql, res)
+  
+  } catch(err) {
 
+    e(err, res)
+
+  }
 })
 
 module.exports = router
