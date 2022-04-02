@@ -43,7 +43,7 @@ router.get('/get/news', (req, res) => {
 router.post('/insert/news', (req, res) => {
 
   const { news_id, news_json } = req.body
-  const sql = `insert into news (news_id, news_json) values ('${news_id}', '${JSON.stringify(news_json)}')`
+  const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json}')`
   query(sql, res)
 
 })
