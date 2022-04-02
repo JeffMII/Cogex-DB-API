@@ -19,26 +19,39 @@ async function query(sql, res) {
   const con = connection()
   
   con.connect()
+
   const promise = new Promise((resolve, reject) => {
-    con.query(sql, async (error, result) => {
-      
-      if(error) {
+    try {
 
-        reject(e(error, res))
-        return
+      con.query(sql, async (error, result) => {
+        
+        if(error) {
+  
+          reject(e(error, res))
+          return
+  
+        } else if(Array.isArray(result))
+          for(const r of result)
+            if(r.news_json)
+              r.news_json = JSON.parse(r.news_json)
+            else break
+  
+        resolve(s(result, res))
 
-      } else if(Array.isArray(result))
-        for(const r of result)
-          if(r.news_json)
-            r.news_json = JSON.parse(r.news_json)
-          else break
+      })
 
-      resolve(s(result, res))
-    })
+    } catch(err) { reject(e(err, res)) }
+
   })
 
-  const content = await promise
-  
+  let content
+
+  try {
+    content = await promise
+  } catch(err) {
+    content = err
+  }
+
   con.end()
 
   return content
@@ -57,7 +70,8 @@ function s(result, res) {
 }
 
 function e(error, res) {
-  const msg = { error: error, result: null}
+
+  const msg = { error: error, result: null }
 
   if(res) {
 
@@ -70,4 +84,4 @@ function e(error, res) {
 
 }
 
-module.exports = { query, r: s, e }
+module.exports = { query, s, e }

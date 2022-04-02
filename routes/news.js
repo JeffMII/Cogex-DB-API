@@ -1,9 +1,6 @@
 const { Router } = require('express')
 const { query, e } = require('../helpers/mysql.helper.js')
-const JSSoup = require('jssoup').default
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
-const HTMLParser = require('node-html-parser')
-const fs = require('fs')
 const { JSDOM } = require('jsdom')
 
 const router = Router()

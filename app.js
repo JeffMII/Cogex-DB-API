@@ -6,6 +6,7 @@ const logger = require('morgan')
 
 const usersRouter = require('./routes/users')
 const newsRouter = require('./routes/news')
+const quizzesRouter = require('./routes/quizzes')
 const categoriesRouter = require('./routes/categories')
 const utilityRouter = require('./routes/utility')
 
@@ -23,6 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 app.use('/users', usersRouter)
 app.use('/news', newsRouter)
+app.use('/quizzes', quizzesRouter)
 app.use('/categories', categoriesRouter)
 app.use('/utility', utilityRouter)
 
