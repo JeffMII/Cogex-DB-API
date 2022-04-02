@@ -71,6 +71,7 @@ function s(result, res) {
 
 function e(error, res) {
 
+  console.log('error')
   const msg = { error: error, result: null }
 
   if(res) {

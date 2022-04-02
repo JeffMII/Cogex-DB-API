@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { connect, query } = require('../helpers/mysql.helper')
+const { query, e } = require('../helpers/mysql.helper')
 
 const router = Router()
 

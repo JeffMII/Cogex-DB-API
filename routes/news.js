@@ -2,6 +2,7 @@ const { Router } = require('express')
 const { query, e } = require('../helpers/mysql.helper.js')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 const { JSDOM } = require('jsdom')
+const crypto = require('crypto')
 
 const router = Router()
 
@@ -108,9 +109,11 @@ router.post('/insert/user/news', async (req, res) => {
         res.send({ error: 'Duplicate', result: null })
         return
       }
+
+      const hash = crypto.createHash('sha256').update(`${user_id}${news_id}`).digest('hex')
     
-      let names = ['user_id', 'news_id']
-      let values = [`${user_id}`, `'${news_id}'`]
+      let names = ['user_news_id', 'user_id', 'news_id']
+      let values = [`'${hash}'`, `${user_id}`, `'${news_id}'`]
     
       if (was_read !== undefined) {
         names = [...names, 'was_read']
@@ -130,6 +133,8 @@ router.post('/insert/user/news', async (req, res) => {
       names = names.join(', ')
       values = values.join(', ')
     
+
+
       sql = `insert into user_news (${names}) values (${values})`
       query(sql, res)
 

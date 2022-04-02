@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { query } = require('../helpers/mysql.helper.js')
+const { query, e } = require('../helpers/mysql.helper.js')
 const crypto = require('crypto')
 
 const router = Router()
