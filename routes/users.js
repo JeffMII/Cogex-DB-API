@@ -10,7 +10,7 @@ router.post('/login', (req, res) => {
 
   const hash = crypto.createHash('sha256').update(user_password).digest('hex')
 
-  const sql = `select user_id, user_creation_date, user_update_date, quiz_time_limit, quiz_question_limit from users where user_nickname='${user_nickname}' and user_password='${hash}'`
+  const sql = `select user_id, user_creation_date, user_update_date, quiz_question_limit, quiz_time_limit_upper, quiz_time_limit_lower from users where user_nickname='${user_nickname}' and user_password='${hash}'`
   query(sql, res)
 
 })
@@ -18,7 +18,7 @@ router.post('/login', (req, res) => {
 router.get('/get/user/by/id', (req, res) => {
 
   const { user_id } = req.query
-  const sql = `select user_nickname, user_creation_date, user_update_date, quiz_time_limit, quiz_question_limit from users where user_id=${user_id}`
+  const sql = `select user_nickname, user_creation_date, user_update_date, quiz_question_limit, quiz_time_limit_upper, quiz_time_limit_lower from users where user_id=${user_id}`
   query(sql, res)
 
 })
@@ -26,7 +26,7 @@ router.get('/get/user/by/id', (req, res) => {
 router.get('/get/user/by/name', (req, res) => {
 
   const { user_nickname } = req.query
-  const sql = `select user_id, user_creation_date, user_update_date, quiz_time_limit, quiz_question_limit from users where user_nickname='${user_nickname}'`
+  const sql = `select user_id, user_creation_date, user_update_date, quiz_question_limit, quiz_time_limit_upper, quiz_time_limit_lower from users where user_nickname='${user_nickname}'`
   query(sql, res)
 
 })
@@ -43,7 +43,7 @@ router.post('/insert/user', (req, res) => {
 
 router.post('/update/user', (req, res) => {
 
-  const { user_id, user_password, quiz_time_limit, quiz_question_limit } = req.body
+  const { user_id, user_password, quiz_question_limit, quiz_time_limit_upper, quiz_time_limit_lower } = req.body
 
   const user_update_date = new Date(Date.now()).toISOString().replace('T', ' ').replace('Z', '')
   
@@ -52,11 +52,14 @@ router.post('/update/user', (req, res) => {
   if (user_password !== undefined)
     sets = [...sets, `user_password='${user_password}'`]
 
-  if (quiz_time_limit !== undefined)
-    sets = [...sets, `quiz_time_limit=${quiz_time_limit}`]
-  
   if (quiz_question_limit !== undefined)
     sets = [...sets, `quiz_question_limit=${quiz_question_limit}`]
+  
+  if (quiz_time_limit_upper !== undefined)
+    sets = [...sets, `quiz_time_limit_upper=${quiz_time_limit_upper}`]
+
+  if (quiz_time_limit_lower !== undefined)
+    sets = [...sets, `quiz_time_limit_lower=${quiz_time_limit_lower}`]
 
   sets = [...sets, `user_update_date='${user_update_date}'`]
   sets = sets.join(', ')
