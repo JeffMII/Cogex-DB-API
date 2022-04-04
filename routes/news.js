@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { query, e } = require('../helpers/mysql.helper.js')
+const { query, e, s } = require('../helpers/mysql.helper.js')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 const { JSDOM } = require('jsdom')
 const crypto = require('crypto')
@@ -46,7 +46,7 @@ router.post('/insert/news', (req, res) => {
   try {
 
     const { news_id, news_json } = req.body
-    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json}')`
+    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\\\/g, '\\')}')`
     query(sql, res)
 
   } catch(err) {
@@ -150,11 +150,10 @@ router.post('/update/user/news', async (req, res) => {
 
   try{
     
-    const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
+    var { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
   
-    let sql = `select (was_read) from user_news where user_id=${user_id} and news_id=${news_id}`
+    let sql = `select (was_read) from user_news where user_id=${user_id} and news_id='${news_id}'`
     const user_news = await query(sql)
-    console.log(user_news)
   
     let sets = []
   
@@ -170,23 +169,30 @@ router.post('/update/user/news', async (req, res) => {
     sets = sets.join(', ')
   
     sql = `update user_news set ${sets} where user_id=${user_id} and news_id='${news_id}'`
-    const update = query(sql, res)
+    const update = await query(sql)
   
-    if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read !== was_read && was_read === true) {
+    if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
       
       const url = `${nlpURL}/generate/news/multiple-choice-questions`
   
       const result = await (await fetch(url, {
         method: 'POST',
-        body: { news_id, snippets },
-        headers: { 'Content-Type': 'application/json' }
+        body: JSON.stringify({ news_id }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       })).json()
       
       if(result)
-        res.send(JSON.parse(result))
+        s(result, res)
       else
-        res.send({ error: 'An unknown error occurred while initiating question generation', result: null })
+        e('An unknown error occurred while initiating question generation', res)
   
+    } else {
+
+      s(update, res)
+
     }
     
   } catch(err) {

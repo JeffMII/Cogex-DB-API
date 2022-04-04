@@ -1,5 +1,6 @@
 const { Router } = require('express')
 const { query, s, e } = require('../helpers/mysql.helper.js')
+const crypto = require('crypto')
 
 const router = Router()
 
@@ -42,9 +43,7 @@ router.get('/get/questions', async (req, res) => {
   
     }
   
-    sql = `select user_news_id, news_id from user_news where user_id=${user_id} and viewed_date between ( CURDATE() - INTERVAL ${build.quiz_time_limit_upper} DAY ) and ( CURDATE() - INTERVAL ${build.quiz_time_limit_lower} DAY ) and was_read=1 and quiz_id is null order by news_id asc`
-  
-    console.log(sql)
+    sql = `select user_news_id, news_id from user_news where user_id=${user_id} and viewed_date between ( current_timestamp() - interval ${build.quiz_time_limit_upper} day ) and ( current_timestamp() - interval ${build.quiz_time_limit_lower} day ) and was_read=1 and quiz_id is null order by news_id asc`
   
     result = undefined
     result = await query(sql)
@@ -62,7 +61,7 @@ router.get('/get/questions', async (req, res) => {
   
       } else {
   
-        e(`User ID ${user_id} either was not found or does not have any read news or has an existing quiz for all read news`, res)
+        e(`User ID ${user_id} does not have any read news or has an existing quiz for all read news between ${build.quiz_time_limit_lower} and ${build.quiz_time_limit_upper} days ago`, res)
         return
   
       }
@@ -121,10 +120,6 @@ router.get('/get/questions', async (req, res) => {
   
             const index = Object.values(pv).reduce((p, c, i) => {
   
-              console.log(`p: ${p}`)
-              console.log(`c: ${c}`)
-              console.log(`i: ${i}`)
-  
               if (p === -1 && c.news_id === news_id) return i
               else return p
   
@@ -174,11 +169,41 @@ router.get('/get/questions', async (req, res) => {
   }
 })
 
+router.get('/get/quiz', (req, res) => {
+
+  const { news_quiz_id } = req.query
+
+  const sql = `select * from news_quizzes where news_quiz_id='${news_quiz_id}'`
+
+  query(sql, res)
+
+})
+
+router.get('/get/user/quizzes', (req, res) => {
+
+  const { user_id } = req.query
+
+  const sql =  `select * from news_quizzes where user_id=${user_id}`
+
+  query(sql, res)
+
+})
+
 router.post('/insert/quiz', (req, res) => {
 
   const { news_quiz } = req.body
 
-  
+  const { user_id, completed_duration, completed_date, quiz_score, ...news_quiz_json } = news_quiz
+
+  const news_quiz_id = crypto.createHash('sha256').update(JSON.stringify(news_quiz)).digest('hex')
+
+  const names = '(news_quiz_id, user_id, completed_duration, completed_date, quiz_score, news_quiz_json)'
+
+  const values = `('${news_quiz_id}', ${user_id}, ${completed_duration}, ${completed_date}, ${quiz_score}, '${JSON.stringify(news_quiz_json)}')`
+
+  const sql = `insert into news_quizzes ${names} values ${values}`
+
+  query(sql, res)
 
 })
 

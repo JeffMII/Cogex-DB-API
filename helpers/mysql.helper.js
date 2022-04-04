@@ -80,7 +80,7 @@ function e(error, res) {
     res.send(msg)
   
   }
-
+  console.log(msg)
   return msg
 
 }
