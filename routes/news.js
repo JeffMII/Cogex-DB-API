@@ -46,7 +46,7 @@ router.post('/insert/news', (req, res) => {
   try {
 
     const { news_id, news_json } = req.body
-    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\\\/g, '\\')}')`
+    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\+/g, '\\')}')`
     query(sql, res)
 
   } catch(err) {
