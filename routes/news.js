@@ -3,18 +3,26 @@ const { query, e, s } = require('../helpers/mysql.helper.js')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 const { JSDOM } = require('jsdom')
 const crypto = require('crypto')
-const env = require('process').env
+// const env = require('process').env
 
 const router = Router()
 
-// var nlpURL = 'http://127.0.0.1:5000'
-
-router.get('/get/Questgen/baseURL', (req, res) => {
-
-  if(env.nlpURL)
-    s(env.nlpURL, res)
+async function getNlpURL() {
+  
+  const sql = `select app_setting_json from app_settings where app_setting_id='nlpURL'`
+  
+  const result = await query(sql)
+  
+  if(result?.result?.length > 0)
+    return JSON.parse(result.result[0].app_setting_json).nlpURL
   else
-    s(null, res)
+    return null
+
+}
+
+router.get('/get/Questgen/baseURL', async (req, res) => {
+
+  s(await getNlpURL(), res)
 
 })
 
@@ -25,8 +33,9 @@ router.post('/set/Questgen/baseURL', (req, res) => {
   if(!url) e('Request body must include url', res)
   else {
   
-    env.nlpURL = url
-    s('Question Generator API base URL updated', res)
+    const sql = `replace into app_settings (app_setting_id, app_setting_json) values ('nlpURL', '{ "nlpURL": "${url}" }')`
+    
+    query(sql, res)
   
   }
 })
@@ -177,7 +186,7 @@ router.post('/update/user/news', async (req, res) => {
   
     if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
       
-      const url = `${env.nlpURL}/generate/news/multiple-choice-questions`
+      const url = `${await getNlpURL()}/generate/news/multiple-choice-questions`
   
       const result = await (await fetch(url, {
         method: 'POST',
