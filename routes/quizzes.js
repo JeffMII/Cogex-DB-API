@@ -189,7 +189,7 @@ router.get('/get/user/quizzes', (req, res) => {
 
 })
 
-router.post('/insert/quiz', (req, res) => {
+router.post('/insert/quiz', async (req, res) => {
 
   const { news_quiz } = req.body
 
