@@ -49,7 +49,7 @@ async function query(sql, res) {
   try {
     content = await promise
   } catch(err) {
-    content = err
+    content = e(err)
   }
 
   con.end()

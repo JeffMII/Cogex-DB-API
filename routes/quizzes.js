@@ -193,17 +193,51 @@ router.post('/insert/quiz', (req, res) => {
 
   const { news_quiz } = req.body
 
-  const { user_id, completed_duration, completed_date, quiz_score, ...news_quiz_json } = news_quiz
+  const { user_id, completed_duration, completed_date, quiz_score, news_questions, ...news_quiz_json } = news_quiz
 
   const news_quiz_id = crypto.createHash('sha256').update(JSON.stringify(news_quiz)).digest('hex')
-
+  
   const names = '(news_quiz_id, user_id, completed_duration, completed_date, quiz_score, news_quiz_json)'
-
+  
   const values = `('${news_quiz_id}', ${user_id}, ${completed_duration}, ${completed_date}, ${quiz_score}, '${JSON.stringify(news_quiz_json)}')`
+  
+  let sql = `insert into news_quizzes ${names} values ${values}`
+  
+  var results = []
+  
+  var result = await query(sql)
 
-  const sql = `insert into news_quizzes ${names} values ${values}`
+  if(result?.error) {
 
-  query(sql, res)
+    e(result.error, res)
+    return
+
+  }
+
+  results = [...results, result.result]
+  
+  var news_ids = []
+
+  for(const question of news_questions)
+    news_ids = [...news_ids, question.news_id]
+
+  for(const news_id of news_ids) {
+    
+    sql = `update into user_news (news_quiz_id) values ('${news_quiz_id}') where user_id=${user_id} and news_id='${news_id}'`
+    result = await query(sql)
+
+    if(result?.error) {
+
+      e(result.error, res)
+      return
+
+    }
+
+    results = [...results, result.result]
+  
+  }
+
+  s(results, res)
 
 })
 
