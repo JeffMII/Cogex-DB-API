@@ -3,14 +3,18 @@ const { query, e, s } = require('../helpers/mysql.helper.js')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 const { JSDOM } = require('jsdom')
 const crypto = require('crypto')
+const env = require('process').env
 
 const router = Router()
 
-var nlpURL = 'http://127.0.0.1:5000'
+// var nlpURL = 'http://127.0.0.1:5000'
 
 router.get('/get/Questgen/baseURL', (req, res) => {
 
-  res.send({ result: nlpURL, error: null })
+  if(env.nlpURL)
+    s(env.nlpURL, res)
+  else
+    s(null, res)
 
 })
 
@@ -18,11 +22,11 @@ router.post('/set/Questgen/baseURL', (req, res) => {
 
   const { url } = req.body
   
-  if(!url) res.send({ error: 'Request body must include url', result: null })
+  if(!url) e('Request body must include url', res)
   else {
   
-    nlpURL = url
-    res.send({ result: 'Question Generator API base URL updated', error: null })
+    env.nlpURL = url
+    s('Question Generator API base URL updated', res)
   
   }
 })
@@ -173,7 +177,7 @@ router.post('/update/user/news', async (req, res) => {
   
     if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
       
-      const url = `${nlpURL}/generate/news/multiple-choice-questions`
+      const url = `${env.nlpURL}/generate/news/multiple-choice-questions`
   
       const result = await (await fetch(url, {
         method: 'POST',
