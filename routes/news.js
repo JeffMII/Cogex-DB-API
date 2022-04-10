@@ -1,17 +1,25 @@
-const { Router } = require('express')
-const { query, e, s } = require('../helpers/mysql.helper.js')
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
+const { q, e, s } = require('../helpers/mysql.helper')
+const { logWrap } = require('../helpers/wrap.helper')
+const { Router } = require('express')
 const { JSDOM } = require('jsdom')
 const crypto = require('crypto')
+const fs = require('fs')
 // const env = require('process').env
 
 const router = Router()
+
+const get = router.get
+router.get = logWrap(get)
+
+const post = router.post
+router.post = logWrap(post)
 
 async function getNlpURL() {
   
   const sql = `select app_setting_json from app_settings where app_setting_id='nlpURL'`
   
-  const result = await query(sql)
+  const result = await q(sql)
   
   if(result?.result?.length > 0)
     return JSON.parse(result.result[0].app_setting_json).nlpURL
@@ -22,20 +30,19 @@ async function getNlpURL() {
 
 router.get('/get/Questgen/baseURL', async (req, res) => {
 
-  s(await getNlpURL(), res)
+  return s(await getNlpURL(), res)
 
 })
 
-router.post('/set/Questgen/baseURL', (req, res) => {
+router.post('/set/Questgen/baseURL', async (req, res) => {
 
   const { url } = req.body
-  
-  if(!url) e('Request body must include url', res)
+
+  if(!url) return e('Request body must include url', res)
   else {
   
     const sql = `replace into app_settings (app_setting_id, app_setting_json) values ('nlpURL', '{ "nlpURL": "${url}" }')`
-    
-    query(sql, res)
+    return await q(sql, res)
   
   }
 })
@@ -45,26 +52,26 @@ router.post('/set/Questgen/baseURL', (req, res) => {
  */ 
 
 // Get news data
-router.get('/get/news', (req, res) => {
+router.get('/get/news', async (req, res) => {
 
   const { news_id } = req.query
   const sql = `select * from news where news_id='${news_id}'`
-  query(sql, res)
+  return await q(sql, res)
 
 })
 
 // Insert new news data
-router.post('/insert/news', (req, res) => {
+router.post('/insert/news', async (req, res) => {
 
   try {
 
     const { news_id, news_json } = req.body
     const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\+/g, '\\')}')`
-    query(sql, res)
+    return await q(sql, res)
 
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
   
   }
 })
@@ -73,16 +80,16 @@ router.post('/insert/news', (req, res) => {
  * News Questions Endpoints
  */
 
-router.get('/get/news/questions', (req, res) => {
+router.get('/get/news/questions', async (req, res) => {
   try{
     
     const { news_id } = req.query
     const sql = `select * from news_questions where news_id='${news_id}'`
-    query(sql, res)
+    return await q(sql, res)
   
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
 
   }
 })
@@ -92,17 +99,17 @@ router.get('/get/news/questions', (req, res) => {
  */
 
 // Get news related to specified user
-router.get('/get/user/news', (req, res) => {
+router.get('/get/user/news', async (req, res) => {
 
   try {
 
     const { user_id } = req.query
     const sql = `select * from user_news un left join news n on un.news_id=n.news_id where un.user_id=${user_id}`
-    query(sql, res)
+    return await q(sql, res)
   
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
 
   }
 
@@ -116,12 +123,10 @@ router.post('/insert/user/news', async (req, res) => {
       const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
       
       let sql = `select * from user_news where user_id=${user_id} and news_id='${news_id}'`
-      const { result } = await query(sql)
+      const { result } = await q(sql)
     
-      if(result?.length > 0) {
-        res.send({ error: 'Duplicate', result: null })
-        return
-      }
+      if(result?.length > 0)
+        return e('Duplicate', res)
 
       const hash = crypto.createHash('sha256').update(`${user_id}${news_id}`).digest('hex')
     
@@ -146,14 +151,12 @@ router.post('/insert/user/news', async (req, res) => {
       names = names.join(', ')
       values = values.join(', ')
     
-
-
       sql = `insert into user_news (${names}) values (${values})`
-      query(sql, res)
+      return await q(sql, res)
 
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
 
   }
 })
@@ -166,7 +169,7 @@ router.post('/update/user/news', async (req, res) => {
     var { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
   
     let sql = `select (was_read) from user_news where user_id=${user_id} and news_id='${news_id}'`
-    const user_news = await query(sql)
+    const user_news = await q(sql)
   
     let sets = []
   
@@ -182,7 +185,7 @@ router.post('/update/user/news', async (req, res) => {
     sets = sets.join(', ')
   
     sql = `update user_news set ${sets} where user_id=${user_id} and news_id='${news_id}'`
-    const update = await query(sql)
+    const update = await q(sql)
   
     if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
       
@@ -198,19 +201,19 @@ router.post('/update/user/news', async (req, res) => {
       })).json()
       
       if(result)
-        s(result, res)
+        return s(result, res)
       else
-        e('An unknown error occurred while initiating question generation', res)
+        return e('An unknown error occurred while initiating question generation', res)
   
     } else {
 
-      s(update, res)
+      return s(update, res)
 
     }
     
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
 
   }
 })
@@ -218,6 +221,60 @@ router.post('/update/user/news', async (req, res) => {
 /**
  * Utility Endpoints and Methods
  */
+
+// router.post('/extract/eeoc', async (req, res) => {
+
+//   let { url } = req.body
+  
+//   const response = await fetch(url, { method: 'GET' })
+
+//   const raw = reformatEEOC(await response.text())
+  
+//   const { document } = (new JSDOM(raw)).window
+
+//   const html = document.body.innerHTML
+
+//   fs.writeFileSync('./html.html', html)
+
+//   const content = document.getElementById('content')
+
+//   fs.writeFileSync('./paras.data', Array.from(content.getElementsByTagName('p')).map(con => { return con.textContent }).join('\n'))
+
+
+  // fs.writeFileSync('./paras.data', Array.from(paras).map(para => { return para.textContent }).join('\n'))
+
+  // for(const para of paras) {
+
+
+
+  // }
+
+  // let content = []
+
+  // for(const card of cards) {
+  //   if(card.getAttribute('data-adregion')) continue
+  //   const url = card.getAttribute('url')
+  //   const title = card.getAttribute('data-title')
+  //   const publisher = { author: card.getAttribute('data-author'), logo: card.querySelector('div.publogo').getAttribute('src') }
+  //   const description = card.querySelector('div.snippet').textContent
+  //   let image = ''
+  //   let tmp = card.querySelector('img.rms-img')
+  //   if(!tmp) image = card.querySelector('div.rms-iac').getAttribute('data-src')
+  //   else image = tmp.getAttribute('src')
+  //   if(!(image.length == 0 && image.includes('bing'))) image = `https://www.bing.com${image}`
+
+  //   content = [...content, { url, title, publisher, description, image: tmp }]
+  // }
+
+//   res.send({ result: true, error: null })
+  
+// })
+
+// function reformatEEOC(html) {
+
+//   return html
+
+// }
 
 // router.post('/topic/extract/headline/content', async (req, res) => {
 

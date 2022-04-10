@@ -1,18 +1,25 @@
+const { q, e } = require('../helpers/mysql.helper')
+const { logWrap } = require('../helpers/wrap.helper')
 const { Router } = require('express')
-const { query, e } = require('../helpers/mysql.helper.js')
 
 const router = Router()
 
-router.post('/query/database', (req, res) => {
+const get = router.get
+router.get = logWrap(get)
+
+const post = router.post
+router.post = logWrap(post)
+
+router.post('/query/database', async (req, res) => {
   
   try {
 
     const { sql } = req.body
-    query(sql, res)
+    return await q(sql, res)
   
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
 
   }
 })

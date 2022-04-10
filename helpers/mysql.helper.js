@@ -2,6 +2,25 @@ const mysql = require('mysql')
 
 const info = JSON.parse(process.env.MYSQL_INFO)
 
+const LOGS = {
+  
+  validate: (value) => {
+    
+    return Object.values(LOGS).reduce((pv, cv) => {
+
+      if(pv) return pv
+      else if(cv == value.toLowerCase()) return true
+      else return false
+
+    }, false)
+
+  },
+  TRANSACTION: 'transaction_logs',
+  ANALYTICS: 'analytics_logs',
+  MISCELLANEOUS: 'miscellaneous_logs'
+
+}
+
 function connection() {
 
   return mysql.createConnection({
@@ -14,7 +33,7 @@ function connection() {
   })
 }
 
-async function query(sql, res) {
+async function q(sql, res) {
 
   const con = connection()
   
@@ -26,7 +45,7 @@ async function query(sql, res) {
       con.query(sql, async (error, result) => {
         
         if(error) {
-  
+          
           reject(e(error, res))
           return
   
@@ -46,11 +65,8 @@ async function query(sql, res) {
 
   let content
 
-  try {
-    content = await promise
-  } catch(err) {
-    content = e(err)
-  }
+  try { content = await promise }
+  catch(err) { content = e(err) }
 
   con.end()
 
@@ -71,7 +87,8 @@ function s(result, res) {
 
 function e(error, res) {
 
-  console.log('error')
+  error = typeof error == 'string' ? new Error(error) : error
+
   const msg = { error: error, result: null }
 
   if(res) {
@@ -80,9 +97,46 @@ function e(error, res) {
     res.send(msg)
   
   }
-  console.log(msg)
+  
   return msg
 
 }
 
-module.exports = { query, s, e }
+async function l(log, table) {
+
+  if(!LOGS.validate(table))
+    return e(`Unknown log table ${table}`)
+
+  const keys = Object.keys(log)
+
+  let names = []
+  let values = []
+
+  loop: for(const key of keys) {
+
+    if(!log[key]) continue loop
+
+    handle: switch(key) {
+
+      case undefined | null:
+
+        return e('A transaction log entry key was undefined while building the sql query')
+
+      default:
+
+        values = [...values, `${log[key]}`]
+        break handle
+
+    }
+
+    names = [...names, key]
+
+  }
+
+  const sql = `insert into transaction_logs (${names.join(', ')}) values (${values.join(', ')})`
+
+  return await q(sql)
+
+}
+
+module.exports = { q, s, e, l, LOGS }
