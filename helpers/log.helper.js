@@ -1,5 +1,6 @@
-const { dateFormat } = require('./date.helper');
+const { dateFormat } = require('./date.helper')
 const { l, LOGS } = require('./mysql.helper')
+const { JSstringify, JSparse } = require('./json.helper')
 
 function logWrap(wrapped) {
 
@@ -17,13 +18,7 @@ function logWrap(wrapped) {
       
       const result = wrap.apply(this, arguments)
 
-      const {
-        
-        transaction_request,
-        transaction_status,
-        transaction_error
-      
-      } = result instanceof Promise ? await result : result
+      const { transaction_request, transaction_status, transaction_error } = result instanceof Promise ? await result : result
       
       const end = dateFormat(new Date(Date.now()))
   
@@ -40,9 +35,6 @@ function logWrap(wrapped) {
 
       }, LOGS.TRANSACTION)
       
-      if(error)
-        console.error(error)
-
     }])
 
   }
@@ -53,7 +45,9 @@ function handWrap(wrapped) {
   
   return async function(req, res) {
 
-    const transaction_request = `'${JSON.stringify(req.query ? req.query : req.body ? req.body : undefined)}'`
+    const args = Object.keys(req.query).length > 0 ? JSstringify(req.query) : Object.keys(req.body).length > 0 ? JSstringify(req.body) : 'Unknown'
+
+    const transaction_request = `'${args}'`
 
     const result = wrapped.apply(this, [req, res])
 
@@ -61,7 +55,9 @@ function handWrap(wrapped) {
 
     const transaction_status = res.statusCode
 
-    const transaction_error = (error ? `'${error}'` : undefined)
+    const err = JSstringify(error)
+
+    const transaction_error = `'${err}'`
 
     return { transaction_request, transaction_status, transaction_error }
 

@@ -1,22 +1,23 @@
 const { Router } = require('express')
-const { query, e } = require('../helpers/mysql.helper')
+const { q, e } = require('../helpers/mysql.helper')
 
 const router = Router()
 
-router.get('/get', (req, res) => {
+router.get('/get', async (req, res) => {
 
   try {
 
     const { id } = req.query
     const con = connect()
     const sql = `select (search_json) from searches where search_id=${id}`
-    query({ con, sql, res })
+    return await q(sql, res)
   
   } catch(err) {
 
-    e(err, res)
+    return e(err, res)
 
   }
+  
 })
 
 router.post('/insert', (req, res) => {
@@ -26,7 +27,7 @@ router.post('/insert', (req, res) => {
     const { id, json } = req.body
     const con = connect()
     const sql = `insert into searches (search_json) values ('${JSON.stringify(json)}')`
-    query({ con, sql, res })
+    q({ con, sql, res })
   
   } catch(err) {
 
@@ -42,7 +43,7 @@ router.post('/upsert', (req, res) => {
     const { id, json } = req.body
     const con = connect()
     const sql = `replace into searches (search_id, search_json) values (${id}, '${JSON.stringify(json)}')`
-    query({ con, sql, res })
+    q({ con, sql, res })
   
   } catch(err) {
 
