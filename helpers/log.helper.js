@@ -34,6 +34,8 @@ function logWrap(wrapped) {
         transaction_end
 
       }, LOGS.TRANSACTION)
+
+      if(error) console.log(error)
       
     }])
 
