@@ -1,5 +1,5 @@
-const { q, e } = require('../helpers/mysql.helper')
-const { logWrap } = require('../helpers/log.helper')
+const { q, e } = require('../helpers/sql')
+const { logWrap } = require('../helpers/log')
 const { Router } = require('express')
 const crypto = require('crypto')
 

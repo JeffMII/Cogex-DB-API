@@ -1,5 +1,5 @@
-const { JSstringify, JSparse } = require('./json.helper')
-const { q } = require('./mysql.helper')
+const JS = require('./json')
+const { q } = require('./sql')
 
 async function getNLP() {
   
@@ -14,7 +14,7 @@ async function getNLP() {
 
     const { app_setting_json } = app_setting
 
-    return JSparse(app_setting_json).nlpURL
+    return JS.parse(app_setting_json).nlpURL
   
   } else
     return null

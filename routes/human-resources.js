@@ -1,8 +1,8 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
-const { logWrap } = require('../helpers/log.helper')
-const { JSstringify, JSparse } = require('../helpers/json.helper')
-const { q, e, s } = require('../helpers/mysql.helper')
-const { getNLP } = require('../helpers/nlp.helper')
+const { logWrap } = require('../helpers/log')
+const JS = require('../helpers/json')
+const { q, e, s } = require('../helpers/sql')
+const { getNLP } = require('../helpers/nlp')
 const { Router } = require('express')
 const crypto = require('crypto')
 
@@ -34,7 +34,7 @@ router.post('/insert/hr', async (req, res) => {
 
     const { hr_id, hr_json } = req.body
 
-    let json = JSstringify(hr_json)
+    let json = JS.stringify(hr_json)
 
     const sql = `insert into human_resources (hr_id, hr_json) values ('${hr_id}', '${json}')`
     return await q(sql, res)
@@ -167,7 +167,7 @@ router.post('/update/staff/hr', async (req, res) => {
       const result = await (await fetch(url, {
 
         method: 'POST',
-        body: JSstringify({ hr_id }),
+        body: JS.stringify({ hr_id }),
         headers: {
 
           'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ router.get('/generate/hr/questions', async (req, res) => {
   const result = await (await fetch(url, {
 
     method: 'POST',
-    body: JSstringify({ hr_id }),
+    body: JS.stringify({ hr_id }),
     headers: {
 
       'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ router.get('/generate/hr/questions/from/articles', async (req, res) => {
   // const result = await (await fetch(url, {
 
   //   method: 'POST',
-  //   body: JSstringify({ hr_id }),
+  //   body: JS.stringify({ hr_id }),
   //   headers: {
 
   //     'Content-Type': 'application/json',
