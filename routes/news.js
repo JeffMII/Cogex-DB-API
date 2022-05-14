@@ -1,7 +1,6 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
-const { q, e, s } = require('../helpers/sql')
-const { logWrap } = require('../helpers/log')
-const JS = require('../helpers/json')
+const { q, e, s } = require('../helpers/mysql.helper')
+const { logWrap } = require('../helpers/log.helper')
 const { Router } = require('express')
 const crypto = require('crypto')
 // const env = require('process').env
@@ -65,7 +64,7 @@ router.post('/insert/news', async (req, res) => {
   try {
 
     const { news_id, news_json } = req.body
-    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\+/g, "\\")}')`
+    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\+/g, '\\')}')`
     return await q(sql, res)
 
   } catch(err) {
@@ -192,7 +191,7 @@ router.post('/update/user/news', async (req, res) => {
   
       const result = await (await fetch(url, {
         method: 'POST',
-        body: JS.stringify({ news_id }),
+        body: JSON.stringify({ news_id }),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'

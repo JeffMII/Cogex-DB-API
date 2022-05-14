@@ -32,7 +32,7 @@ module.exports = { dateFormat }
 //     shortDate:      "m/d/yy",
 //     mediumDate:     "mmm d, yyyy",
 //     longDate:       "mmmm d, yyyy",
-//     fullDate:       "dddd, mm, yyyy",
+//     fullDate:       "dddd, mmmm d, yyyy",
 //     shortTime:      "h:MM TT",
 //     mediumTime:     "h:MM:ss TT",
 //     longTime:       "h:MM:ss TT Z",
@@ -60,7 +60,7 @@ module.exports = { dateFormat }
 //       mask = String(d8.masks[mask] || mask || d8.masks["default"])
   
 //       // Allow setting the utc argument via the mask
-//       if (mask.slice(4) == "UTC:") {
+//       if (mask.slice(0, 4) == "UTC:") {
 //         mask = mask.slice(4)
 //         utc = true
 //       }
@@ -106,7 +106,7 @@ module.exports = { dateFormat }
 //         }
   
 //       return mask.replace(token, function ($0) {
-//         return $0 in flags ? flags[$0] : $0.slice($0.length - 1)
+//         return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1)
 //       })
 //     }
 //   }
@@ -336,7 +336,7 @@ module.exports = { dateFormat }
 // 		mask = String(dF.masks[mask] || mask || dF.masks["default"])
 
 // 		// Allow setting the utc argument via the mask
-// 		if (mask.slice(4) == "UTC:") {
+// 		if (mask.slice(0, 4) == "UTC:") {
 // 			mask = mask.slice(4)
 // 			utc = true
 // 		}
@@ -382,7 +382,7 @@ module.exports = { dateFormat }
 // 			}
 
 // 		return mask.replace(token, function ($0) {
-// 			return $0 in flags ? flags[$0] : $0.slice($0.length - 1)
+// 			return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1)
 // 		})
 // 	}
 // }()

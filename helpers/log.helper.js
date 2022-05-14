@@ -1,20 +1,12 @@
-const { dateFormat } = require('./data')
-const { l, LOGS } = require('./sql')
-const JS = require('./json')
-
-const DEBUG = true
+const { dateFormat } = require('./date.helper')
+const { l, LOGS } = require('./mysql.helper')
+const { JSstringify, JSparse } = require('./json.helper')
 
 function logWrap(wrapped) {
 
   return async function(signature, handler) {
-
-    if(!DEBUG) {
-
-      return wrapped.apply(this, arguments)
-
-    }
     
-    return wrapped.apply(this, [signature, async function() {
+    wrapped.apply(this, [signature, async function() {
       
       const start = dateFormat(new Date(Date.now()))
   
@@ -32,7 +24,7 @@ function logWrap(wrapped) {
   
       const transaction_end = `'${end}'`
 
-      return l({
+      const { error } = await l({
 
         transaction_start,
         transaction_endpoint,
@@ -43,6 +35,8 @@ function logWrap(wrapped) {
 
       }, LOGS.TRANSACTION)
 
+      if(error) console.log(error)
+      
     }])
 
   }
@@ -53,10 +47,7 @@ function handWrap(wrapped) {
   
   return async function(req, res) {
 
-    if(!DEBUG) 
-      return wrapped.apply(this, [req, res])
-
-    const args = Object.keys(req.query).length > 0 ? JS.stringify(req.query) : Object.keys(req.body).length > 0 ? JS.stringify(req.body) : undefined
+    const args = Object.keys(req.query).length > 0 ? JSstringify(req.query) : Object.keys(req.body).length > 0 ? JSstringify(req.body) : 'Unknown'
 
     const transaction_request = `'${args}'`
 
@@ -66,7 +57,7 @@ function handWrap(wrapped) {
 
     const transaction_status = res.statusCode
 
-    const err = JS.stringify(error)
+    const err = JSstringify(error)
 
     const transaction_error = `'${err}'`
 

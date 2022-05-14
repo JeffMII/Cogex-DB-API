@@ -1,13 +1,18 @@
 const mysql = require('mysql')
-const JS = require('./json')
-const MysqlError = require('mysql/lib/protocol/constants/errors')
+
 const info = JSON.parse(process.env.MYSQL_INFO)
 
 const LOGS = {
-
+  
   validate: (value) => {
-    console.log(value)
-    return Object.values(LOGS).reduce((pv, cv) => pv || cv == value.toLowerCase() , false)
+    
+    return Object.values(LOGS).reduce((pv, cv) => {
+
+      if(pv) return pv
+      else if(cv == value.toLowerCase()) return true
+      else return false
+
+    }, false)
 
   },
   TRANSACTION: 'transaction_logs',
@@ -26,7 +31,6 @@ function connection() {
     database: info.database
 
   })
-
 }
 
 async function q(sql, res) {
@@ -34,7 +38,7 @@ async function q(sql, res) {
   const con = connection()
   
   con.connect()
-  
+
   const promise = new Promise((resolve, reject) => {
     try {
 
@@ -48,9 +52,9 @@ async function q(sql, res) {
         } else if(Array.isArray(result))
           for(const r of result)
             if(r.news_json)
-              r.news_json = JS.parse(r.news_json)
+              r.news_json = JSON.parse(r.news_json)
             else break
-
+  
         resolve(s(result, res))
 
       })
@@ -60,10 +64,13 @@ async function q(sql, res) {
   })
 
   let content
-  
-  try { return await promise }
-  catch(err) { return e(err) }
-  finally { con.end() }
+
+  try { content = await promise }
+  catch(err) { content = e(err) }
+
+  con.end()
+
+  return content
 
 }
 
@@ -80,21 +87,9 @@ function s(result, res) {
 
 function e(error, res) {
 
-  try {
+  error = typeof error == 'string' ? new Error(error) : error
 
-    error = JS.parse(error)
-
-  } catch {
-
-    error = typeof error === 'string' ? new Error(error) : error
-
-  }
-
-  // let err = typeof error === 'string' ? new Error(error) : error
-
-  error = JS.objectify(error)
-
-  const msg = { error, result: null }
+  const msg = { error: error, result: null }
 
   if(res) {
 
@@ -140,22 +135,8 @@ async function l(log, table) {
 
   const sql = `insert into transaction_logs (${names.join(', ')}) values (${values.join(', ')})`
 
-  return q(sql)
+  return await q(sql)
 
 }
-
-function run() {
-
-  const strErr = new Error('New error')
-  const appErr = new SyntaxError('({ a, b, c } = x)')
-  const sqlErr = new Error(MysqlError[1635])
-
-  console.log(e(JS.objectify(strErr)))
-  console.log(e(JS.objectify(sqlErr)))
-  console.log(e(JS.objectify(appErr)))
-
-}
-
-run()
 
 module.exports = { q, s, e, l, LOGS }
