@@ -1,8 +1,10 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
 const { q, e, s } = require('../helpers/mysql.helper')
-const { logWrap } = require('../helpers/log.helper')
+const { logWrap } = require('../helpers/wrap.helper')
 const { Router } = require('express')
+const { JSDOM } = require('jsdom')
 const crypto = require('crypto')
+const fs = require('fs')
 // const env = require('process').env
 
 const router = Router()
@@ -215,5 +217,195 @@ router.post('/update/user/news', async (req, res) => {
 
   }
 })
+
+/**
+ * Utility Endpoints and Methods
+ */
+
+// router.post('/extract/eeoc', async (req, res) => {
+
+//   let { url } = req.body
+  
+//   const response = await fetch(url, { method: 'GET' })
+
+//   const raw = reformatEEOC(await response.text())
+  
+//   const { document } = (new JSDOM(raw)).window
+
+//   const html = document.body.innerHTML
+
+//   fs.writeFileSync('./html.html', html)
+
+//   const content = document.getElementById('content')
+
+//   fs.writeFileSync('./paras.data', Array.from(content.getElementsByTagName('p')).map(con => { return con.textContent }).join('\n'))
+
+
+  // fs.writeFileSync('./paras.data', Array.from(paras).map(para => { return para.textContent }).join('\n'))
+
+  // for(const para of paras) {
+
+
+
+  // }
+
+  // let content = []
+
+  // for(const card of cards) {
+  //   if(card.getAttribute('data-adregion')) continue
+  //   const url = card.getAttribute('url')
+  //   const title = card.getAttribute('data-title')
+  //   const publisher = { author: card.getAttribute('data-author'), logo: card.querySelector('div.publogo').getAttribute('src') }
+  //   const description = card.querySelector('div.snippet').textContent
+  //   let image = ''
+  //   let tmp = card.querySelector('img.rms-img')
+  //   if(!tmp) image = card.querySelector('div.rms-iac').getAttribute('data-src')
+  //   else image = tmp.getAttribute('src')
+  //   if(!(image.length == 0 && image.includes('bing'))) image = `https://www.bing.com${image}`
+
+  //   content = [...content, { url, title, publisher, description, image: tmp }]
+  // }
+
+//   res.send({ result: true, error: null })
+  
+// })
+
+// function reformatEEOC(html) {
+
+//   return html
+
+// }
+
+// router.post('/topic/extract/headline/content', async (req, res) => {
+
+//   // let { html } = req.body
+  
+//   const response = await fetch('https://www.bing.com/news/search?q=World', { method: 'GET' })
+//   const raw = reformatHTML(await response.text())
+//   const { document } = (new JSDOM(raw)).window
+//   fs.writeFileSync('./topic.html', document.body.innerHTML)
+//   const cards = document.getElementsByClassName('news-card')
+
+//   let content = []
+
+//   for(const card of cards) {
+//     if(card.getAttribute('data-adregion')) continue
+//     const url = card.getAttribute('url')
+//     const title = card.getAttribute('data-title')
+//     const publisher = { author: card.getAttribute('data-author'), logo: card.querySelector('div.publogo').getAttribute('src') }
+//     const description = card.querySelector('div.snippet').textContent
+//     let image = ''
+//     let tmp = card.querySelector('img.rms-img')
+//     if(!tmp) image = card.querySelector('div.rms-iac').getAttribute('data-src')
+//     else image = tmp.getAttribute('src')
+//     if(!(image.length == 0 && image.includes('bing'))) image = `https://www.bing.com${image}`
+
+//     content = [...content, { url, title, publisher, description, image: tmp }]
+//   }
+
+//   res.send({ result: content, error: null })
+  
+// })
+
+// router.post('/topic/extract/article/content', async (req, res) => {
+
+//   let { html } = req.body
+
+//   html = reformatHTML(html)
+
+//   const soup = new JSSoup(html)
+
+//   let content = []
+//   // const body = soup.find('div', 'articlecontent')
+//   const article = soup.find('div', 'richtext')
+//   const paragraphs = article.findAll('p')
+
+//   for(const paragraph of paragraphs)
+//     if(paragraph.parent.attrs['class'] === 'richtext')
+//       content = [...content, paragraph.text.trim()]
+  
+//   res.send({ result: content, error: null })
+
+// })
+
+// router.post('/search/extract/headline/content', (req, res) => {
+
+//   let { html } = req.body
+
+//   html = reformatHTML(html)
+
+//   console.log(html, '\n----------\n')
+
+//   const soup = new JSSoup(html)
+//   const cards = soup.findAll('div', 'news-card')
+  
+//   let content = []
+
+//   for(const card of cards) {
+
+//     // if(card.attrs['data-adregion']) continue;
+
+//     const url = card.attrs['url'].trim()
+//     const title = card.attrs['data-title']
+//     const author = card.attrs['data-author'].trim()
+//     const description = card.find('div', 'news_snpt')?.attrs['title'].trim()
+
+//     let image = card.find('img', 'rms_img')?.attrs['src']
+//     image = (image ? image : card.find('div', 'rms_iac')?.attrs['data-src'])
+//     image = (image?.includes('bing') ? image : ( image ? 'www.bing.com' + image : image))
+//     image = image.trim()
+
+//     content = [...content, { url, title, author, description, image, article: null }]
+
+//   }
+
+//   res.send({ result: content, error: null })
+  
+// })
+
+// router.post('/search/extract/article/content', async (req, res) => {
+
+//   let { html } = req.body
+
+//   html = reformatHTML(html)
+
+//   const soup = new JSSoup(html)
+
+//   let content = []
+//   // const body = soup.find('div', 'articlecontent')
+//   const article = soup.find('div', 'richtext')
+//   const paragraphs = article.findAll('p')
+
+//   for(const paragraph of paragraphs)
+//     if(paragraph.parent.attrs['class'] === 'richtext')
+//       content = [...content, paragraph.text.trim()]
+  
+//   res.send({ result: content, error: null })
+
+// })
+
+// function reformatHTML(html) {
+
+//   return html.replace(/(?<=="(\w)+)_(?=(\w)+")/g, '-').replace(/news-snpt/g, 'snippet')
+//   // .replace(/\/\/\<\!\[CDATA\[\s*[^\n]*\s*\/\/\]\]\>/g, '')
+//             //  .replace(/&nbsp;/g, ' ')
+//             //  .replace(/&lt;/g, '<')
+//             //  .replace(/&gt;/g, '>')
+//             //  .replace(/&amp;/g, '&')
+//             //  .replace(/&quot;/g, '"')
+//             //  .replace(/&apos;/g, '\'')
+//             //  .replace(/&cent;/g, 'cent(s)')
+//             //  .replace(/&pound;/g, 'pound(s)')
+//             //  .replace(/&yen;/g, 'yen')
+//             //  .replace(/&euro;/g, 'euro(s)')
+//             //  .replace(/&copy;/g, '(copyright)')
+//             //  .replace(/&reg;/g, '(registered trademark)')
+//             //  .replace(/\n/g, '')
+//             //  .replace(/(?<=[^\s])\s+(?=[^\s])/g, ' ')
+//             //  .replace(/\'/g, '`')
+//             //  .replace(/\"/g, '\'')
+//             //  .replace(/\\/g, '')
+             
+// }
 
 module.exports = router
