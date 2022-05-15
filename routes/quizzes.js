@@ -23,18 +23,10 @@ router.get('/get/questions', async (req, res) => {
   
     ({ result, error } = await q(sql))
   
-    // if (result) {
-  
     if (result?.length > 0) {
 
       const { quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit } = result[0]
       build = { ...build, quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit, quiz_score: null, completed_duration: null, completed_date: null }
-  
-      // } else {
-  
-      //   return e(`User ID ${user_id} was not found`, res)
-        
-      // }
   
     } else if (error) {
 
@@ -52,21 +44,12 @@ router.get('/get/questions', async (req, res) => {
   
     let user_news = []
   
-    // if (result) {
-  
     if (result?.result?.length > 0) {
 
       for (const { user_news_id, news_id } of result.result)
         user_news = [...user_news, { user_news_id, news_id }]
 
       build = { ...build, user_news }
-  
-      // } else {
-  
-      //   e(`User ID ${user_id} does not have any read news or has an existing quiz for all read news between ${build.quiz_time_limit_lower} and ${build.quiz_time_limit_upper} days ago`, res)
-      //   return
-  
-      // }
   
     } else if (error) {
   
@@ -85,8 +68,6 @@ router.get('/get/questions', async (req, res) => {
     let news_questions = []
   
     ({ result, error } = await q(sql))
-  
-    // if (result) {
   
     if (result?.length >= build.quiz_question_limit) {
 
@@ -143,8 +124,6 @@ router.get('/get/questions', async (req, res) => {
 
       return e(`No questions were found for News IDs: ${news_ids.join(', ')}`, res)
 
-    // }
-  
     } else if (error) {
   
       return e(error, res)
