@@ -3,6 +3,7 @@ const { q, e, s } = require('../helpers/mysql.helper')
 const { logWrap } = require('../helpers/wrap.helper')
 const { Router } = require('express')
 const crypto = require('crypto')
+const { multiChoices } = require('../helpers/gpt')
 
 const router = Router()
 
@@ -186,19 +187,19 @@ router.post('/update/user/news', async (req, res) => {
   
     if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
       
-      const url = `${await getNlpURL()}/generate/news/multiple-choice-questions`
-  
-      const result = await (await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify({ news_id }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      })).json()
+      // const url = `${await getNlpURL()}/generate/news/multiple-choice-questions`
+      sql = `select (news_json) from news where news_id='${news_id}'`
+
+      const news = await q(sql)
       
-      if(result)
-        return s(result, res)
+      const news_json = JSON.parse(news.result[0]['news_json'])
+
+      const snippets = [news_json['newsDescription']]
+
+      const questions = multiChoices(snippets)
+      
+      if(questions)
+        return s(questions, res)
       else
         return e('An unknown error occurred while initiating question generation', res)
   
