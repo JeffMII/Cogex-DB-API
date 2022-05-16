@@ -10,12 +10,12 @@ router.get = logWrap(get)
 const post = router.post
 router.post = logWrap(post)
 
-router.post('/query/database', async (req, res) => {
+router.post('/query/database', (req, res) => {
   
   try {
 
     const { sql } = req.body
-    return await q(sql, res)
+    return q(sql, res)
   
   } catch(err) {
 

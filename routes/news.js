@@ -16,30 +16,31 @@ async function getNlpURL() {
   
   const sql = `select app_setting_json from app_settings where app_setting_id='nlpURL'`
   
-  const result = await q(sql)
+  const { result } = await q(sql)
   
-  if(result?.result?.length > 0)
-    return JSON.parse(result.result[0].app_setting_json).nlpURL
-  else
-    return null
+  if(result?.length > 0)
+    return JSON.parse(result[0].app_setting_json).nlpURL
+    
+  return null
 
 }
 
-router.get('/get/Questgen/baseURL', async (req, res) => {
+router.get('/get/Questgen/baseURL', (req, res) => {
 
-  return s(await getNlpURL(), res)
+  return s(getNlpURL(), res)
 
 })
 
-router.post('/set/Questgen/baseURL', async (req, res) => {
+router.post('/set/Questgen/baseURL', (req, res) => {
 
   const { url } = req.body
 
   if(!url) return e('Request body must include url', res)
+  
   else {
   
     const sql = `replace into app_settings (app_setting_id, app_setting_json) values ('nlpURL', '{ "nlpURL": "${url}" }')`
-    return await q(sql, res)
+    return q(sql, res)
   
   }
 })
@@ -49,22 +50,22 @@ router.post('/set/Questgen/baseURL', async (req, res) => {
  */ 
 
 // Get news data
-router.get('/get/news', async (req, res) => {
+router.get('/get/news', (req, res) => {
 
   const { news_id } = req.query
   const sql = `select * from news where news_id='${news_id}'`
-  return await q(sql, res)
+  return q(sql, res)
 
 })
 
 // Insert new news data
-router.post('/insert/news', async (req, res) => {
+router.post('/insert/news', (req, res) => {
 
   try {
 
     const { news_id, news_json } = req.body
     const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\+/g, '\\')}')`
-    return await q(sql, res)
+    return q(sql, res)
 
   } catch(err) {
 
@@ -77,18 +78,20 @@ router.post('/insert/news', async (req, res) => {
  * News Questions Endpoints
  */
 
-router.get('/get/news/questions', async (req, res) => {
+router.get('/get/news/questions', (req, res) => {
+
   try{
     
     const { news_id } = req.query
     const sql = `select * from news_questions where news_id='${news_id}'`
-    return await q(sql, res)
+    return q(sql, res)
   
   } catch(err) {
 
     return e(err, res)
 
   }
+
 })
 
 /**
@@ -96,13 +99,13 @@ router.get('/get/news/questions', async (req, res) => {
  */
 
 // Get news related to specified user
-router.get('/get/user/news', async (req, res) => {
+router.get('/get/user/news', (req, res) => {
 
   try {
 
     const { user_id } = req.query
     const sql = `select * from user_news un left join news n on un.news_id=n.news_id where un.user_id=${user_id}`
-    return await q(sql, res)
+    return q(sql, res)
   
   } catch(err) {
 
@@ -149,13 +152,14 @@ router.post('/insert/user/news', async (req, res) => {
       values = values.join(', ')
     
       sql = `insert into user_news (${names}) values (${values})`
-      return await q(sql, res)
+      return q(sql, res)
 
   } catch(err) {
 
     return e(err, res)
 
   }
+
 })
 
 // Update relation between specified user and news
@@ -199,20 +203,19 @@ router.post('/update/user/news', async (req, res) => {
       
       if(result)
         return s(result, res)
-      else
-        return e('An unknown error occurred while initiating question generation', res)
+
+      return e('An unknown error occurred while initiating question generation', res)
   
-    } else {
-
-      return s(update, res)
-
     }
+    
+    return s(update, res)
     
   } catch(err) {
 
     return e(err, res)
 
   }
+
 })
 
 module.exports = router

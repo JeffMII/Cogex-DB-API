@@ -2,6 +2,8 @@ const mysql = require('mysql')
 
 const info = JSON.parse(process.env.MYSQL_INFO)
 
+var pcount = 0
+
 const LOGS = {
   
   validate: (value) => {
@@ -9,8 +11,10 @@ const LOGS = {
     return Object.values(LOGS).reduce((pv, cv) => {
 
       if(pv) return pv
-      else if(cv == value.toLowerCase()) return true
-      else return false
+      
+      if(cv == value.toLowerCase()) return true
+      
+      return false
 
     }, false)
 
@@ -33,23 +37,31 @@ function connection() {
   })
 }
 
-async function q(sql, res) {
+function q(sql, res) {
 
+  sql = sql.replace(/(?<=[A-Za-z])\'(?=[A-Za-z])/g, '@')
+           .replace(/\\+n/g, '')
+           .replace(/\\+/g, '/')
+  
+  //  .replace(/((?<=["][^"]+[\])}:,\\\[{(:, ]?)\'(?=[^\])}:,\\\[{(:, ][^"]+["]))|((?<=["][^"]+[^\])}:,\\\[{(:, ][\])}:,\\\[{(:, ]?)\'(?=[\])}:,\\\[{(:, ]?[^"]+["]))/g, '@')
+  
   const con = connection()
   
-  con.connect()
-
-  const promise = new Promise((resolve, reject) => {
+  return new Promise(resolve => {
+    
     try {
 
-      con.query(sql, async (error, result) => {
+      con.connect()
+
+      con.query(sql, (error, result) => {
         
         if(error) {
           
-          reject(e(error, res))
-          return
+          resolve(e(error, res)) ;return
   
-        } else if(Array.isArray(result))
+        }
+        
+        if(Array.isArray(result))
           for(const r of result)
             if(r.news_json)
               r.news_json = JSON.parse(r.news_json)
@@ -59,50 +71,57 @@ async function q(sql, res) {
 
       })
 
-    } catch(err) { reject(e(err, res)) }
+    } catch(err) { resolve(e(err, res)) } finally { con.end() }
 
   })
 
-  let content
+}
 
-  try { content = await promise }
-  catch(err) { content = e(err) }
+async function s(result, res) {
 
-  con.end()
+  result instanceof Promise ? await result : result
 
-  return content
+  return r({ result, error: null }, res)
 
 }
 
-function s(result, res) {
+async function e(error, res) {
 
-  const msg = { result: result, error: null }
-
-  if(res)
-    res.send(msg)
-
-  return msg
-
-}
-
-function e(error, res) {
-
+  error = error instanceof Promise ? await error : error
   error = typeof error == 'string' ? new Error(error) : error
 
-  const msg = { error: error, result: null }
+  pcount++
+  console.trace(`e PASS ${pcount}`)
+  console.log(error)
+  console.log()
+
+  return r({ error: {
+    
+    code: error.code ? error.code : error.name ? error.name : 'None',
+    errno: error.errno ? error.errno : -1,
+    sqlMessage: error.sqlMessage ? error.sqlMessage : error.message ? error.message : 'None',
+    sqlState: error.sqlState ? error.sqlState : error.stack ? error.stack : 'None',
+    index: error.index ? error.index : -1,
+    sql: error.sql ? error.sql : 'None'
+  
+  }, result: null }, res)
+
+}
+
+function r({ result, error }, res) {
 
   if(res) {
 
-    res.status(500)
-    res.send(msg)
-  
+    res.status(result ? 200 : error?.status ? error.status : 500)
+    res.send(result ? { result, error } : { error, result })
+
   }
-  
-  return msg
+
+  return { result, error }
 
 }
 
-async function l(log, table) {
+function l(log, table) {
 
   if(!LOGS.validate(table))
     return e(`Unknown log table ${table}`)
@@ -125,6 +144,7 @@ async function l(log, table) {
       default:
 
         values = [...values, `${log[key]}`]
+        
         break handle
 
     }
@@ -135,8 +155,8 @@ async function l(log, table) {
 
   const sql = `insert into transaction_logs (${names.join(', ')}) values (${values.join(', ')})`
 
-  return await q(sql)
+  return q(sql)
 
 }
 
-module.exports = { q, s, e, l, LOGS }
+module.exports = { q, s, e, r, l, LOGS }

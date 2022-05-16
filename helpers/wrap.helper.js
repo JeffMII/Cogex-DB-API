@@ -3,7 +3,7 @@ const { l, LOGS } = require('./mysql.helper')
 
 function logWrap(wrapped) {
 
-  return async function(signature, handler) {
+  return function(signature, handler) {
     
     wrapped.apply(this, [signature, async function() {
       
@@ -41,7 +41,7 @@ function logWrap(wrapped) {
       }, LOGS.TRANSACTION)
       
       if(error)
-        console.error(error)
+        console.log(error)
 
     }])
 
@@ -53,7 +53,7 @@ function handWrap(wrapped) {
   
   return async function(req, res) {
 
-    const transaction_request = `'${JSON.stringify(req.query ? req.query : req.body ? req.body : undefined)}'`
+    const transaction_request = `'${JSON.stringify(req.query && Object.keys(req.query).length > 0 ? req.query : req.body && Object.keys(req.body).length > 0 ? req.body : undefined)}'`
 
     const result = wrapped.apply(this, [req, res])
 
@@ -61,7 +61,20 @@ function handWrap(wrapped) {
 
     const transaction_status = res.statusCode
 
-    const transaction_error = (error ? `'${error}'` : undefined)
+    let transaction_error = error ? { 
+    
+      code: error.code,
+      errno: error.errno,
+      sqlMessage: error.sqlMessage,
+      sqlState: error.sqlState,
+      index: error.index,
+      sql: error.sql
+    
+    } : { error: null }
+
+    transaction_error = JSON.stringify(transaction_error)
+
+    transaction_error = transaction_error ? `'${transaction_error}'` : null
 
     return { transaction_request, transaction_status, transaction_error }
 

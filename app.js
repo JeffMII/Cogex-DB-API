@@ -9,6 +9,7 @@ const newsRouter = require('./routes/news')
 const quizzesRouter = require('./routes/quizzes')
 const categoriesRouter = require('./routes/categories')
 const utilityRouter = require('./routes/utility')
+const { e } = require('./helpers/mysql.helper')
 
 const app = express()
 
@@ -34,12 +35,6 @@ app.use(function(req, res, next) {
 })
 
 // error handler
-app.use(function(err, req, res, next) {
-
-  console.log('error handler')
-  res.status(err.status || 500)
-  res.send({ error: err, result: null })
-
-})
+app.use(function(err, req, res, next) { e(err, res) })
 
 module.exports = app
