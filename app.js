@@ -7,9 +7,9 @@ const logger = require('morgan')
 const usersRouter = require('./routes/users')
 const newsRouter = require('./routes/news')
 const quizzesRouter = require('./routes/quizzes')
-const humanResourcesRouter = require('./routes/human-resources')
 const categoriesRouter = require('./routes/categories')
 const utilityRouter = require('./routes/utility')
+const { e } = require('./helpers/mysql.helper')
 
 const app = express()
 
@@ -26,7 +26,6 @@ app.use(express.static(path.join(__dirname, 'public')))
 app.use('/users', usersRouter)
 app.use('/news', newsRouter)
 app.use('/quizzes', quizzesRouter)
-app.use('/hr', humanResourcesRouter)
 app.use('/categories', categoriesRouter)
 app.use('/utility', utilityRouter)
 
@@ -36,12 +35,6 @@ app.use(function(req, res, next) {
 })
 
 // error handler
-app.use(function(err, req, res, next) {
-
-  console.log('error handler')
-  res.status(err.status || 500)
-  res.send({ error: err, result: null })
-
-})
+app.use(function(err, req, res, next) { e(err, res) })
 
 module.exports = app

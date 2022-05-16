@@ -1,5 +1,5 @@
-const { q, s, e } = require('../helpers/mysql.helper.js')
-const { logWrap } = require('../helpers/log.helper')
+const { q, s, e, r } = require('../helpers/mysql.helper.js')
+const { logWrap } = require('../helpers/wrap.helper')
 const { Router } = require('express')
 const crypto = require('crypto')
 
@@ -15,68 +15,43 @@ router.get('/get/questions', async (req, res) => {
   
   try {
     
-    const { user_id } = req.q
+    const { user_id } = req.query
   
     let build = { user_id }
   
     let sql = `select quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit from users where user_id=${user_id}`
   
-    ({ result, error } = await q(sql))
-  
-    // if (result) {
+    ;({ result, error } = await q(sql))
   
     if (result?.length > 0) {
 
       const { quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit } = result[0]
-      build = { ...build, quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit, quiz_score: null, completed_duration: null, completed_date: null }
-  
-      // } else {
-  
-      //   return e(`User ID ${user_id} was not found`, res)
-        
-      // }
-  
-    } else if (error) {
-
-      return e(error, res)
-  
-    } else {
-  
-      return e('An unknown error occurred when getting user information for news questions', res)
+      build = { ...build, quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit, quiz_score: null, completed_duration: null }
   
     }
+
+    else if(error) return r({ error, result }, res)
+      
+    else return e('An unknown error occurred when getting user information for news questions', res)
   
     sql = `select user_news_id, news_id from user_news where user_id=${user_id} and viewed_date between ( current_timestamp() - interval ${build.quiz_time_limit_upper} day ) and ( current_timestamp() - interval ${build.quiz_time_limit_lower} day ) and was_read=1 and news_quiz_id is null order by news_id asc`
   
-    ({ result, error } = await q(sql))
+    ;({ result, error } = await q(sql))
   
     let user_news = []
   
-    // if (result) {
-  
-    if (result?.result?.length > 0) {
+    if (result?.length > 0) {
 
-      for (const { user_news_id, news_id } of result.result)
+      for (const { user_news_id, news_id } of result)
         user_news = [...user_news, { user_news_id, news_id }]
 
       build = { ...build, user_news }
   
-      // } else {
-  
-      //   e(`User ID ${user_id} does not have any read news or has an existing quiz for all read news between ${build.quiz_time_limit_lower} and ${build.quiz_time_limit_upper} days ago`, res)
-      //   return
-  
-      // }
-  
-    } else if (error) {
-  
-      return e(error, res)
-  
-    } else {
-  
-      return e('An unknown error occurred when getting user news information for news questions', res)
-  
     }
+    
+    else if (error) return r({ error, result }, res)
+    
+    else return e('An unknown error occurred when getting user news information for news questions', res)
   
     const news_ids = user_news.map(un => { return `'${un.news_id}'` })
   
@@ -84,15 +59,13 @@ router.get('/get/questions', async (req, res) => {
   
     let news_questions = []
   
-    ({ result, error } = await q(sql))
-  
-    // if (result) {
+    ;({ result, error } = await q(sql))
   
     if (result?.length >= build.quiz_question_limit) {
 
-      news_questions = result.result.map(r => {
+      news_questions = result.map(rt => {
 
-        const { ...news_question } = r
+        const { ...news_question } = rt
         return news_question
 
       })
@@ -114,18 +87,31 @@ router.get('/get/questions', async (req, res) => {
 
         question = { ...question, news_question_json: JSON.parse(question.news_question_json) }
 
-        if (Object.keys(pv).length == 0) pv = [{ news_id, questions: [{ ...question, user_answer: null }] }]
+        if (Object.keys(pv).length == 0) pv = [{
+          news_id, questions: [{
+            ...question, user_answer: null
+          }]
+        }]
+
         else {
 
           const index = Object.values(pv).reduce((p, c, i) => {
 
             if (p === -1 && c.news_id === news_id) return i
-            else return p
+            
+            return p
 
           }, -1)
 
-          if (index === -1) pv = [...pv, { news_id, questions: [{ ...question, user_answer: null }] }]
-          else pv[index].questions.push({ ...question, user_answer: null })
+          if (index === -1) pv = [...pv, {
+            news_id, questions: [{
+              ...question, user_answer: null
+            }]
+          }]
+          
+          else pv[index].questions.push({
+            ...question, user_answer: null
+          })
 
         }
 
@@ -135,103 +121,98 @@ router.get('/get/questions', async (req, res) => {
 
       build = { ...build, news_questions }
 
-    } else if (result?.length > 0) {
-
-      return e(`Only ${result.result.length} total question(s) found for News IDs: ${news_ids.join(', ')}`, res)
-
-    } else if(result) {
-
-      return e(`No questions were found for News IDs: ${news_ids.join(', ')}`, res)
-
-    // }
-  
-    } else if (error) {
-  
-      return e(error, res)
-  
-    } else {
-  
-      return e('An unknown error occurred when getting news questions', res)
-  
     }
+    
+    else if (result)
+      return e(`Complete more articles to activate a quiz:\n${result.length} of ${build.quiz_question_limit} questions found\n`, res)
+
+    else if(error)
+      return r({ error, result }, res)
+   
+    else
+      return e('An unknown error occurred when getting news questions', res)
   
     return s(build, res)
 
-  } catch(err) {
+  } catch(err) { return e(err, res) }
 
-    return e(err, res)
-
-  }
 })
 
-router.get('/get/quiz', async (req, res) => {
+router.get('/get/quiz', (req, res) => {
 
-  const { news_quiz_id } = req.q
+  const { news_quiz_id } = req.query
 
   const sql = `select * from news_quizzes where news_quiz_id='${news_quiz_id}'`
 
-  return await q(sql, res)
+  return q(sql, res)
 
 })
 
-router.get('/get/user/quizzes', async (req, res) => {
+router.get('/get/user/quizzes', (req, res) => {
 
-  const { user_id } = req.q
+  const { user_id } = req.query
 
   const sql =  `select * from news_quizzes where user_id=${user_id}`
 
-  return await q(sql, res)
+  return q(sql, res)
 
 })
 
 router.post('/insert/quiz', async (req, res) => {
 
-  const { news_quiz } = req.body
+  const { ...news_quiz } = req.body
 
-  const { user_id, completed_duration, completed_date, quiz_score, news_questions, ...news_quiz_json } = news_quiz
+  const { user_id, completed_duration, quiz_score, news_questions, ...rest } = news_quiz
+
+  const news_quiz_json = { news_questions, ...rest }
 
   const news_quiz_id = crypto.createHash('sha256').update(JSON.stringify(news_quiz)).digest('hex')
   
-  const names = '(news_quiz_id, user_id, completed_duration, completed_date, quiz_score, news_quiz_json)'
+  const names = '(news_quiz_id, user_id, completed_duration, quiz_score, news_quiz_json)'
   
-  const values = `('${news_quiz_id}', ${user_id}, ${completed_duration}, ${completed_date}, ${quiz_score}, '${JSON.stringify(news_quiz_json)}')`
+  const values = `('${news_quiz_id}', ${user_id}, ${completed_duration}, ${quiz_score}, '${JSON.stringify(news_quiz_json)}')`
   
   let sql = `insert into news_quizzes ${names} values ${values}`
   
-  var results = []
-  
-  var result = await q(sql)
+  let { result, error } = await q(sql)
 
-  if(result?.error) {
+  if(error) {
 
-    return e(result.error, res)
+    return r({ error, result }, res)
 
   }
 
-  results = [...results, result.result]
-  
-  var news_ids = []
+  let news_ids = []
 
   for(const question of news_questions)
-    news_ids = [...news_ids, question.news_id]
+    news_ids = [...news_ids, `'${question.news_id}'`]
 
-  for(const news_id of news_ids) {
-    
-    sql = `update into user_news (news_quiz_id) values ('${news_quiz_id}') where user_id=${user_id} and news_id='${news_id}'`
-    result = await q(sql)
+  news_ids = news_ids.join(', ')
 
-    if(result?.error) {
-
-      return e(result.error, res)
-
-    }
-
-    results = [...results, result.result]
+  sql = `update user_news set news_quiz_id='${news_quiz_id}' where user_id=${user_id} and news_id in (${news_ids})`
   
-  }
+  ;({ result, error } = await q(sql))
 
-  return s(results, res)
+  if(error) return r({ error, result }, res)
+
+  return s(result, res)
 
 })
+
+// const E = {
+
+//   readMORE: ({ quiz_question_limit: ql }, { length: rl }, { length: nl }) => {
+    
+//     return `${
+//       rl >= ql * (1 / 3) ? rl >= ql * (2 / 3) ?
+//       `Only ${ql - rl / nl}` :
+//       'Complete more' :
+//       'Read'
+//     } articles to activate a quiz: ${rl} of ${ql} questions found`
+  
+//   },
+
+
+// }
 
 module.exports = router
