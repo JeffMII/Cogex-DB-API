@@ -2,8 +2,6 @@ const mysql = require('mysql')
 
 const info = JSON.parse(process.env.MYSQL_INFO)
 
-var pcount = 0
-
 const LOGS = {
   
   validate: (value) => {
@@ -89,11 +87,6 @@ async function e(error, res) {
 
   error = error instanceof Promise ? await error : error
   error = typeof error == 'string' ? new Error(error) : error
-
-  pcount++
-  console.trace(`e PASS ${pcount}`)
-  console.log(error)
-  console.log()
 
   return r({ error: {
     
