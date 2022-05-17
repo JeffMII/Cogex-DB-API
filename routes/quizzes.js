@@ -152,7 +152,7 @@ router.get('/get/user/quizzes', (req, res) => {
 
   const { user_id } = req.query
 
-  const sql =  `select * from news_quizzes where user_id=${user_id}`
+  const sql = `select * from news_quizzes where user_id=${user_id}`
 
   return q(sql, res)
 
