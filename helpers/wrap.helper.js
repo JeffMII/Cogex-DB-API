@@ -33,7 +33,7 @@ function logWrap(wrapped) {
 
         transaction_start,
         transaction_endpoint,
-        transaction_request,
+        transaction_request: transaction_request ? transaction_request : {}, 
         transaction_status,
         transaction_error,
         transaction_end
