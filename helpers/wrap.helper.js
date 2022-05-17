@@ -33,7 +33,7 @@ function logWrap(wrapped) {
 
         transaction_start,
         transaction_endpoint,
-        transaction_request: transaction_request ? transaction_request : {}, 
+        transaction_request, 
         transaction_status,
         transaction_error,
         transaction_end
@@ -53,7 +53,7 @@ function handWrap(wrapped) {
   
   return async function(req, res) {
 
-    const transaction_request = `'${JSON.stringify(req.query && Object.keys(req.query).length > 0 ? req.query : req.body && Object.keys(req.body).length > 0 ? req.body : undefined)}'`
+    const transaction_request = `'${JSON.stringify(req.query && Object.keys(req.query).length > 0 ? req.query : req.body && Object.keys(req.body).length > 0 ? req.body : {})}'`
 
     const result = wrapped.apply(this, [req, res])
 
