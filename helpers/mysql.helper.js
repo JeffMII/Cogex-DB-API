@@ -37,7 +37,7 @@ function connection() {
 
 function q(sql, res) {
 
-  sql = sql.replace(/(?<=[A-Za-z])\'(?=[A-Za-z])/g, '@')
+  sql = sql.replace(/(?<=[A-Za-z]\s?)\'(?=\s?[A-Za-z])/g, '@')
            .replace(/\\+n/g, '')
            .replace(/\\+/g, '/')
   
