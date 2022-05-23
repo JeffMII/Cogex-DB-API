@@ -35,11 +35,24 @@ function connection() {
   })
 }
 
+function f({ sql, data }) {
+
+  if(!Array.isArray(data)) data = [data]
+
+  for(const d of data)
+    if(typeof d == 'object')
+      try { JSON.stringify(d) }
+      catch {}
+
+  return mysql.format(sql, data, true)
+
+}
+
 function q(sql, res) {
 
-  sql = sql.replace(/(?<=[A-Za-z]\s?)\'(?=\s?[A-Za-z])/g, '@')
-           .replace(/\\+n/g, '')
-           .replace(/\\+/g, '/')
+  // sql = sql.replace(/(?<=[A-Za-z]\s?\\?)\'(?=\s?[A-Za-z])/g, '@')
+  //          .replace(/\\+n/g, '')
+          //  .replace(/\\+/g, '/')
   
   //  .replace(/((?<=["][^"]+[\])}:,\\\[{(:, ]?)\'(?=[^\])}:,\\\[{(:, ][^"]+["]))|((?<=["][^"]+[^\])}:,\\\[{(:, ][\])}:,\\\[{(:, ]?)\'(?=[\])}:,\\\[{(:, ]?[^"]+["]))/g, '@')
   
@@ -55,7 +68,7 @@ function q(sql, res) {
         
         if(error) {
           
-          resolve(e(error, res)) ;return
+          resolve(e(error, res)); return
   
         }
         
@@ -105,6 +118,7 @@ function r({ result, error }, res) {
 
   if(res) {
 
+    console.log(JSON.stringify({ result, error }))
     res.status(result ? 200 : error?.status ? error.status : 500)
     res.send(result ? { result, error } : { error, result })
 
@@ -124,32 +138,22 @@ function l(log, table) {
   let names = []
   let values = []
 
-  loop: for(const key of keys) {
+  for(const key of keys) {
 
-    if(!log[key]) continue loop
+    if(!log[key]) continue
+    // if(key == 'transaction_error') continue
 
-    handle: switch(key) {
-
-      case undefined | null:
-
-        return e('A transaction log entry key was undefined while building the sql query')
-
-      default:
-
-        values = [...values, `${log[key]}`]
-        
-        break handle
-
-    }
-
+    values = [...values, log[key]]
     names = [...names, key]
 
   }
 
-  const sql = `insert into transaction_logs (${names.join(', ')}) values (${values.join(', ')})`
+  let sql = `insert into transaction_logs (${names.join(', ')}) values (${new Array(values.length).fill('?').join(', ')})`
+
+  sql = f({ sql, data: values })
 
   return q(sql)
 
 }
 
-module.exports = { q, s, e, r, l, LOGS }
+module.exports = { q, s, e, r, l, f, LOGS }

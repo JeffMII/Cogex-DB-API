@@ -1,5 +1,5 @@
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args))
-const { q, e, s } = require('../helpers/mysql.helper')
+const { q, e, s, f } = require('../helpers/mysql.helper')
 const { logWrap } = require('../helpers/wrap.helper')
 const { Router } = require('express')
 const crypto = require('crypto')
@@ -53,7 +53,9 @@ router.post('/set/Questgen/baseURL', (req, res) => {
 router.get('/get/news', (req, res) => {
 
   const { news_id } = req.query
+
   const sql = `select * from news where news_id='${news_id}'`
+  
   return q(sql, res)
 
 })
@@ -61,17 +63,14 @@ router.get('/get/news', (req, res) => {
 // Insert new news data
 router.post('/insert/news', (req, res) => {
 
-  try {
-
-    const { news_id, news_json } = req.body
-    const sql = `insert into news (news_id, news_json) values ('${news_id}', '${news_json.replace(/\\+/g, '\\')}')`
-    return q(sql, res)
-
-  } catch(err) {
-
-    return e(err, res)
+  const { news_id, news_json } = req.body
   
-  }
+  console.log(`NEWS_JSON TYPE: ${typeof news_json}`)
+
+  let sql = f({ sql: `insert into news (news_id, news_json) values ('${news_id}', ?)`, data: news_json }) //.replace(/\\+/g, '\\')
+
+  return q(sql, res)
+
 })
 
 /**
@@ -79,19 +78,13 @@ router.post('/insert/news', (req, res) => {
  */
 
 router.get('/get/news/questions', (req, res) => {
-
-  try{
     
-    const { news_id } = req.query
-    const sql = `select * from news_questions where news_id='${news_id}'`
-    return q(sql, res)
+  const { news_id } = req.query
+
+  const sql = `select * from news_questions where news_id='${news_id}'`
   
-  } catch(err) {
-
-    return e(err, res)
-
-  }
-
+  return q(sql, res)
+  
 })
 
 /**
@@ -101,120 +94,98 @@ router.get('/get/news/questions', (req, res) => {
 // Get news related to specified user
 router.get('/get/user/news', (req, res) => {
 
-  try {
+  const { user_id } = req.query
 
-    const { user_id } = req.query
-    const sql = `select * from user_news un left join news n on un.news_id=n.news_id where un.user_id=${user_id}`
-    return q(sql, res)
+  const sql = `select * from user_news un left join news n on un.news_id=n.news_id where un.user_id=${user_id}`
   
-  } catch(err) {
-
-    return e(err, res)
-
-  }
-
+  return q(sql, res)
+  
 })
 
 // Insert new relation between specified user and news
 router.post('/insert/user/news', async (req, res) => {
 
-  try{
-    
-      const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
-      
-      let sql = `select * from user_news where user_id=${user_id} and news_id='${news_id}'`
-      const { result } = await q(sql)
-    
-      if(result?.length > 0)
-        return e('Duplicate', res)
+  const { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
+  
+  let sql = `select * from user_news where user_id=${user_id} and news_id='${news_id}'`
+  const { result } = await q(sql)
 
-      const hash = crypto.createHash('sha256').update(`${user_id}${news_id}`).digest('hex')
-    
-      let names = ['user_news_id', 'user_id', 'news_id']
-      let values = [`'${hash}'`, `${user_id}`, `'${news_id}'`]
-    
-      if (was_read !== undefined) {
-        names = [...names, 'was_read']
-        values = [...values, `${was_read}`]
-      }
-      
-      if (is_bookmarked !== undefined) {
-        names = [...names, 'is_bookmarked']
-        values = [...values, `${is_bookmarked}`]
-      }
-      
-      if (has_recommended !== undefined) {
-        names = [...names, 'has_recommended']
-        values = [...values, `${has_recommended}`]
-      }
-    
-      names = names.join(', ')
-      values = values.join(', ')
-    
-      sql = `insert into user_news (${names}) values (${values})`
-      return q(sql, res)
+  if(result?.length > 0)
+    return e('Duplicate', res)
 
-  } catch(err) {
+  const hash = crypto.createHash('sha256').update(`${user_id}${news_id}`).digest('hex')
 
-    return e(err, res)
+  let names = ['user_news_id', 'user_id', 'news_id']
+  let values = [`'${hash}'`, `${user_id}`, `'${news_id}'`]
 
+  if (was_read !== undefined) {
+    names = [...names, 'was_read']
+    values = [...values, `${was_read}`]
   }
+  
+  if (is_bookmarked !== undefined) {
+    names = [...names, 'is_bookmarked']
+    values = [...values, `${is_bookmarked}`]
+  }
+  
+  if (has_recommended !== undefined) {
+    names = [...names, 'has_recommended']
+    values = [...values, `${has_recommended}`]
+  }
+
+  names = names.join(', ')
+  values = values.join(', ')
+
+  sql = `insert into user_news (${names}) values (${values})`
+  return q(sql, res)
 
 })
 
 // Update relation between specified user and news
 router.post('/update/user/news', async (req, res) => {
 
-  try{
-    
-    var { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
-  
-    let sql = `select (was_read) from user_news where user_id=${user_id} and news_id='${news_id}'`
-    const user_news = await q(sql)
-  
-    let sets = []
-  
-    if (was_read !== undefined)
-      sets = [...sets, `was_read=${was_read}`]
-  
-    if (is_bookmarked !== undefined)
-      sets = [...sets, `is_bookmarked=${is_bookmarked}`]
-  
-    if (has_recommended !== undefined)
-      sets = [...sets, `has_recommended=${has_recommended}`]
-  
-    sets = sets.join(', ')
-  
-    sql = `update user_news set ${sets} where user_id=${user_id} and news_id='${news_id}'`
-    const update = await q(sql)
-  
-    if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
-      
-      const url = `${await getNlpURL()}/generate/news/multiple-choice-questions`
-  
-      const result = await (await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify({ news_id }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      })).json()
-      
-      if(result)
-        return s(result, res)
+  var { user_id, news_id, was_read, is_bookmarked, has_recommended } = req.body
 
-      return e('An unknown error occurred while initiating question generation', res)
-  
-    }
-    
-    return s(update, res)
-    
-  } catch(err) {
+  let sql = `select (was_read) from user_news where user_id=${user_id} and news_id='${news_id}'`
+  const user_news = await q(sql)
 
-    return e(err, res)
+  let sets = []
+
+  if (was_read !== undefined)
+    sets = [...sets, `was_read=${was_read}`]
+
+  if (is_bookmarked !== undefined)
+    sets = [...sets, `is_bookmarked=${is_bookmarked}`]
+
+  if (has_recommended !== undefined)
+    sets = [...sets, `has_recommended=${has_recommended}`]
+
+  sets = sets.join(', ')
+
+  sql = `update user_news set ${sets} where user_id=${user_id} and news_id='${news_id}'`
+  const update = await q(sql)
+
+  if(update?.result?.changedRows == 1 && user_news?.result[0]?.was_read != was_read && was_read == true) {
+    
+    const url = `${await getNlpURL()}/generate/news/multiple-choice-questions`
+
+    const result = await (await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ news_id }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    })).json()
+    
+    if(result)
+      return s(result, res)
+
+    return e('An unknown error occurred while initiating question generation', res)
 
   }
+  
+  return s(update, res)
 
 })
 

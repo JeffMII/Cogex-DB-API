@@ -1,5 +1,5 @@
 const { dateFormat } = require('./date.helper');
-const { l, LOGS } = require('./mysql.helper')
+const { r, l, LOGS } = require('./mysql.helper')
 
 function logWrap(wrapped) {
 
@@ -9,13 +9,13 @@ function logWrap(wrapped) {
       
       const start = dateFormat(new Date(Date.now()))
   
-      const transaction_start = `'${start}'`
+      const transaction_start = `${start}`
   
-      const transaction_endpoint = `'${signature}'`
+      const transaction_endpoint = `${signature}`
   
       const wrap = handWrap(handler)
       
-      const result = wrap.apply(this, arguments)
+      const data = wrap.apply(this, arguments)
 
       const {
         
@@ -23,13 +23,13 @@ function logWrap(wrapped) {
         transaction_status,
         transaction_error
       
-      } = result instanceof Promise ? await result : result
+      } = data instanceof Promise ? await data : data
       
       const end = dateFormat(new Date(Date.now()))
   
-      const transaction_end = `'${end}'`
+      const transaction_end = `${end}`
 
-      const { error } = await l({
+      const { result, error } = await l({
 
         transaction_start,
         transaction_endpoint,
@@ -40,8 +40,15 @@ function logWrap(wrapped) {
 
       }, LOGS.TRANSACTION)
       
-      if(error)
+      if(error) {
+
+        const { res } = arguments
+
         console.log(error)
+
+        return r({ error, result }, res)
+
+      }
 
     }])
 
@@ -53,7 +60,7 @@ function handWrap(wrapped) {
   
   return async function(req, res) {
 
-    const transaction_request = `'${JSON.stringify(req.query && Object.keys(req.query).length > 0 ? req.query : req.body && Object.keys(req.body).length > 0 ? req.body : {})}'`
+    const transaction_request = req.query && Object.keys(req.query).length > 0 ? req.query : req.body && Object.keys(req.body).length > 0 ? req.body : {}
 
     const result = wrapped.apply(this, [req, res])
 
@@ -71,10 +78,6 @@ function handWrap(wrapped) {
       sql: error.sql
     
     } : { error: null }
-
-    transaction_error = JSON.stringify(transaction_error)
-
-    transaction_error = transaction_error ? `'${transaction_error}'` : null
 
     return { transaction_request, transaction_status, transaction_error }
 

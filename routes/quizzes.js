@@ -1,4 +1,4 @@
-const { q, s, e, r } = require('../helpers/mysql.helper.js')
+const { q, s, e, r, f } = require('../helpers/mysql.helper.js')
 const { logWrap } = require('../helpers/wrap.helper')
 const { Router } = require('express')
 const crypto = require('crypto')
@@ -15,9 +15,9 @@ router.get('/get/questions', async (req, res) => {
   
   try {
     
-    const { user_id } = req.query
+    const { user_id, custom_time_limit } = req.query
   
-    let build = { user_id }
+    let build = { user_id, custom_time_limit }
   
     let sql = `select quiz_time_limit_upper, quiz_time_limit_lower, quiz_question_limit from users where user_id=${user_id}`
   
@@ -34,13 +34,15 @@ router.get('/get/questions', async (req, res) => {
       
     else return e('An unknown error occurred when getting user information for news questions', res)
   
-    sql = `select user_news_id, news_id from user_news where user_id=${user_id} and viewed_date between ( current_timestamp() - interval ${build.quiz_time_limit_upper} day ) and ( current_timestamp() - interval ${build.quiz_time_limit_lower} day ) and was_read=1 and news_quiz_id is null order by news_id asc`
+    sql = `select user_news_id, news_id from user_news where user_id=${user_id} and viewed_date between ( current_timestamp() - interval ${custom_time_limit ? custom_time_limit : build.quiz_time_limit_upper} day ) and ( current_timestamp() - interval ${build.quiz_time_limit_lower} day ) and was_read=1 and news_quiz_id is null order by news_id asc`
   
     ;({ result, error } = await q(sql))
   
     let user_news = []
   
     if (result?.length > 0) {
+      
+      console.log(`USER_NEWS RESULT LENGTH: ${result.length}`)
 
       for (const { user_news_id, news_id } of result)
         user_news = [...user_news, { user_news_id, news_id }]
@@ -62,6 +64,8 @@ router.get('/get/questions', async (req, res) => {
     ;({ result, error } = await q(sql))
   
     if (result?.length >= build.quiz_question_limit) {
+
+      console.log(`NEWS_QUESTIONS RESULT LENGTH: ${result.length}`)
 
       news_questions = result.map(rt => {
 
@@ -123,8 +127,14 @@ router.get('/get/questions', async (req, res) => {
 
     }
     
-    else if (result)
+    else if (result) {
+      
+      console.log(`NEWS_QUESTIONS TOO FEW RESULT:`)
+      console.log(result)
+    
       return e(`Complete more articles to activate a quiz:\n${result.length} of ${build.quiz_question_limit} questions found\n`, res)
+    
+    }
 
     else if(error)
       return r({ error, result }, res)
@@ -168,19 +178,16 @@ router.post('/insert/quiz', async (req, res) => {
 
   const news_quiz_id = crypto.createHash('sha256').update(JSON.stringify(news_quiz)).digest('hex')
   
-  const names = '(news_quiz_id, user_id, completed_duration, quiz_score, news_quiz_json)'
+  const names = 'news_quiz_id, user_id, completed_duration, quiz_score, news_quiz_json'
   
-  const values = `('${news_quiz_id}', ${user_id}, ${completed_duration}, ${quiz_score}, '${JSON.stringify(news_quiz_json)}')`
+  const values = [news_quiz_id, user_id, completed_duration, quiz_score, news_quiz_json]
   
-  let sql = `insert into news_quizzes ${names} values ${values}`
-  
+  let sql = f(`insert into news_quizzes (${names}) values (${new Array(values.length).fill('?').join(', ')})`, values)
+
   let { result, error } = await q(sql)
 
-  if(error) {
-
+  if(error)
     return r({ error, result }, res)
-
-  }
 
   let news_ids = []
 
@@ -193,7 +200,8 @@ router.post('/insert/quiz', async (req, res) => {
   
   ;({ result, error } = await q(sql))
 
-  if(error) return r({ error, result }, res)
+  if(error)
+    return r({ error, result }, res)
 
   return s(result, res)
 
