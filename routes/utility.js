@@ -13,7 +13,6 @@ router.post = logWrap(post)
 router.post('/query/database', (req, res) => {
   
   const { sql } = req.body
-
   return q(sql, res)
   
 })

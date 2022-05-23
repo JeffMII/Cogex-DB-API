@@ -1,21 +1,21 @@
 const { dateFormat } = require('./date.helper');
-const { l, LOGS } = require('./mysql.helper')
+const { r, l, LOGS } = require('./mysql.helper')
 
 function logWrap(wrapped) {
 
-  return async function(signature, handler) {
+  return function(signature, handler) {
     
     wrapped.apply(this, [signature, async function() {
       
       const start = dateFormat(new Date(Date.now()))
   
-      const transaction_start = `'${start}'`
+      const transaction_start = `${start}`
   
-      const transaction_endpoint = `'${signature}'`
+      const transaction_endpoint = `${signature}`
   
       const wrap = handWrap(handler)
       
-      const result = wrap.apply(this, arguments)
+      const data = wrap.apply(this, arguments)
 
       const {
         
@@ -23,25 +23,32 @@ function logWrap(wrapped) {
         transaction_status,
         transaction_error
       
-      } = result instanceof Promise ? await result : result
+      } = data instanceof Promise ? await data : data
       
       const end = dateFormat(new Date(Date.now()))
   
-      const transaction_end = `'${end}'`
+      const transaction_end = `${end}`
 
-      const { error } = await l({
+      const { result, error } = await l({
 
         transaction_start,
         transaction_endpoint,
-        transaction_request,
+        transaction_request, 
         transaction_status,
         transaction_error,
         transaction_end
 
       }, LOGS.TRANSACTION)
       
-      if(error)
-        console.error(error)
+      if(error) {
+
+        const { res } = arguments
+
+        console.log(error)
+
+        return r({ error, result }, res)
+
+      }
 
     }])
 
@@ -53,7 +60,7 @@ function handWrap(wrapped) {
   
   return async function(req, res) {
 
-    const transaction_request = `'${JSON.stringify(req.query ? req.query : req.body ? req.body : undefined)}'`
+    const transaction_request = req.query && Object.keys(req.query).length > 0 ? req.query : req.body && Object.keys(req.body).length > 0 ? req.body : {}
 
     const result = wrapped.apply(this, [req, res])
 
@@ -61,7 +68,16 @@ function handWrap(wrapped) {
 
     const transaction_status = res.statusCode
 
-    const transaction_error = (error ? `'${error}'` : undefined)
+    let transaction_error = error ? { 
+    
+      code: error.code,
+      errno: error.errno,
+      sqlMessage: error.sqlMessage,
+      sqlState: error.sqlState,
+      index: error.index,
+      sql: error.sql
+    
+    } : { error: null }
 
     return { transaction_request, transaction_status, transaction_error }
 
