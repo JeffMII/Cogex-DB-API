@@ -42,8 +42,6 @@ router.get('/get/questions', async (req, res) => {
   
     if (result?.length > 0) {
       
-      console.log(`USER_NEWS RESULT LENGTH: ${result.length}`)
-
       for (const { user_news_id, news_id } of result)
         user_news = [...user_news, { user_news_id, news_id }]
 
@@ -64,8 +62,6 @@ router.get('/get/questions', async (req, res) => {
     ;({ result, error } = await q(sql))
   
     if (result?.length >= build.quiz_question_limit) {
-
-      console.log(`NEWS_QUESTIONS RESULT LENGTH: ${result.length}`)
 
       news_questions = result.map(rt => {
 
@@ -129,9 +125,6 @@ router.get('/get/questions', async (req, res) => {
     
     else if (result) {
       
-      console.log(`NEWS_QUESTIONS TOO FEW RESULT:`)
-      console.log(result)
-    
       return e(`Complete more articles to activate a quiz:\n${result.length} of ${build.quiz_question_limit} questions found\n`, res)
     
     }
@@ -182,7 +175,7 @@ router.post('/insert/quiz', async (req, res) => {
   
   const values = [news_quiz_id, user_id, completed_duration, quiz_score, news_quiz_json]
   
-  let sql = f(`insert into news_quizzes (${names}) values (${new Array(values.length).fill('?').join(', ')})`, values)
+  let sql = f({ sql: `insert into news_quizzes (${names}) values (${new Array(values.length).fill('?').join(', ')})`, data: values })
 
   let { result, error } = await q(sql)
 

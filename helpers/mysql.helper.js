@@ -39,9 +39,9 @@ function f({ sql, data }) {
 
   if(!Array.isArray(data)) data = [data]
 
-  for(const d of data)
-    if(typeof d == 'object')
-      try { JSON.stringify(d) }
+  for(const i of Object.keys(data))
+    if(typeof data[i] == 'object')
+      try { data[i] = JSON.stringify(data[i]) }
       catch {}
 
   return mysql.format(sql, data, true)
@@ -50,12 +50,6 @@ function f({ sql, data }) {
 
 function q(sql, res) {
 
-  // sql = sql.replace(/(?<=[A-Za-z]\s?\\?)\'(?=\s?[A-Za-z])/g, '@')
-  //          .replace(/\\+n/g, '')
-          //  .replace(/\\+/g, '/')
-  
-  //  .replace(/((?<=["][^"]+[\])}:,\\\[{(:, ]?)\'(?=[^\])}:,\\\[{(:, ][^"]+["]))|((?<=["][^"]+[^\])}:,\\\[{(:, ][\])}:,\\\[{(:, ]?)\'(?=[\])}:,\\\[{(:, ]?[^"]+["]))/g, '@')
-  
   const con = connection()
   
   return new Promise(resolve => {
@@ -118,8 +112,8 @@ function r({ result, error }, res) {
 
   if(res) {
 
-    console.log(JSON.stringify({ result, error }))
     res.status(result ? 200 : error?.status ? error.status : 500)
+    
     res.send(result ? { result, error } : { error, result })
 
   }

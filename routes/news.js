@@ -65,9 +65,7 @@ router.post('/insert/news', (req, res) => {
 
   const { news_id, news_json } = req.body
   
-  console.log(`NEWS_JSON TYPE: ${typeof news_json}`)
-
-  let sql = f({ sql: `insert into news (news_id, news_json) values ('${news_id}', ?)`, data: news_json }) //.replace(/\\+/g, '\\')
+  let sql = f({ sql: `insert into news (news_id, news_json) values ('${news_id}', ?)`, data: news_json })
 
   return q(sql, res)
 

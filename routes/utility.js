@@ -12,16 +12,10 @@ router.post = logWrap(post)
 
 router.post('/query/database', (req, res) => {
   
-  try {
-
-    const { sql } = req.body
-    return q(sql, res)
+  const { sql } = req.body
   
-  } catch(err) {
-
-    return e(err, res)
-
-  }
+  return q(sql, res)
+  
 })
 
 module.exports = router
