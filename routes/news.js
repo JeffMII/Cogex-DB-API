@@ -27,7 +27,7 @@ async function getNlpURL() {
 
 router.get('/get/Questgen/baseURL', async (req, res) => {
 
-  return s(await getNlpURL(), res)
+  return s(getNlpURL(), res)
 
 })
 

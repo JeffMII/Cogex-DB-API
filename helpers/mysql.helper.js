@@ -84,7 +84,7 @@ function q(sql, res) {
 
 async function s(result, res) {
 
-  result instanceof Promise ? await result : result
+  result = result instanceof Promise ? await result : result
 
   return r({ result, error: null }, res)
 
